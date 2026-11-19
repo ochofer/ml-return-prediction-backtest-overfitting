@@ -1,0 +1,58 @@
+{
+ "settings": {
+  "months": 228,
+  "trials": 32,
+  "blocks": 12,
+  "repetitions_a_b": 4000,
+  "repetitions_c_d": 1000,
+  "seed": 20261119,
+  "stream": 2,
+  "clause_streams": {
+   "a_b": 0,
+   "c": 1,
+   "d": 2
+  }
+ },
+ "clauses": {
+  "a": {
+   "repetitions": 4000,
+   "mean_best_sharpe": 0.13749212847715525,
+   "expected_best_sharpe": 0.13937314771469878,
+   "ratio": 0.9865037184824581,
+   "relative_tolerance": 0.05,
+   "met": true
+  },
+  "b": {
+   "repetitions": 4000,
+   "share_above_level": 0.00025,
+   "level": 0.95,
+   "share_max": 0.05,
+   "median": 0.47939865582076807,
+   "median_range": [
+    0.4,
+    0.6
+   ],
+   "met": true
+  },
+  "c": {
+   "repetitions": 1000,
+   "mean_pbo": 0.49780627705627706,
+   "sd_pbo": 0.1828040974048399,
+   "range": [
+    0.45,
+    0.55
+   ],
+   "met": true
+  },
+  "d": {
+   "repetitions": 1000,
+   "planted_annual_sharpe": 1.0,
+   "share_planted_best": 0.984,
+   "share_min": 0.9,
+   "mean_pbo": 0.09966017316017316,
+   "pbo_max": 0.25,
+   "met": true
+  },
+  "all_met": true
+ }
+}
