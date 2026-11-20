@@ -11,7 +11,9 @@ the overfitting statistics were set on 18 November 2026. That date rests on
 this file alone: the repository's history begins with the commit that holds
 this file, and it cannot show the date. The seed, the names of the random
 streams, the data root's variable and the size checks' power were set on
-19 November 2026. A value that is still to be set is None here, with the
+19 November 2026. The commit the copied code is taken from, the copies' SHA-256,
+the digest of the manifest's entries for the eight tables, the results folder
+and French's folder were set on 20 November 2026. A value that is still to be set is None here, with the
 milestone that sets it, and it is set in a commit of its own before any run
 that reads it. A level is never moved after a run that judges it.
 
@@ -57,6 +59,18 @@ MANIFEST_FILE = "manifest.json"  # the extraction's record: the SQL, rows, colum
 MANIFEST_SHA256 = "23e96d189f4b095936f47a1ebacb4e987fb260726afab4b6e6400c25ebce8693"   # read on 18 and 19 November 2026, equal to manifest.json.sha256
 MANIFEST_FILES = 310             # files the manifest lists
 MANIFEST_ROWS = 112_161_796      # rows the manifest lists
+
+# The eight tables' entries in the manifest, as one digest: the SHA-256 of the
+# compact JSON list of [file, rows, SHA-256] of every file of the keys in TABLES
+# below, sorted by key and file. Every run checks it beside the manifest's own
+# hash. A later pull that adds tables to the extraction changes the manifest's
+# hash and leaves this digest as it is, as long as the eight tables are the same.
+# Set on 20 November 2026.
+MANIFEST_ENTRIES_SHA256 = "9e0202735911afd462e0ef6f7a9bf5f3937dc3be94faa863d457abae76b09237"
+MANIFEST_ENTRIES = 95            # files of the eight tables: 37 yearly files of the daily file, 52 of the fundamentals, one each for the other six
+
+RESULTS_DIR = "results/20260928"   # the folder of the panel's committed aggregates, named by the extraction date. Set on 20 November 2026
+FRENCH_CACHE_DIR = "data/french"   # French's files as downloaded, never committed: data/ is ignored by git. Set on 20 November 2026
 CRSP_END = "2024-12-31"          # the last date of the CRSP library on this subscription, where the sample ends
 DAILY_FILE_START = "1990-01-02"  # the first date of the daily stock file in the extraction
 
@@ -85,20 +99,32 @@ FRENCH_SERIES = ("daily market excess return", "one-month bill rate")
 # ---------------------------------------------------------------------------
 
 # Seven modules of Stock-Level Tracking's package are copied verbatim into
-# src/mlrp/source/, with the names of its constants that they read. The commit
-# they are copied from, their SHA-256 and that of the source's constants file
-# are set in a commit of their own before any code reads the extraction.
+# src/mlrp/source/. The names of the source's constants that they read are in a
+# file of their own there, src/mlrp/source/constants.py, each at the source's
+# value at SOURCE_COMMIT. Its constants file is not copied. The study's own
+# modules call the copies through src/mlrp/data.py with this file's settings.
+# The commit and the SHA-256 below were set on 20 November 2026, in a commit
+# before any code reads the extraction.
 COPIED_INTO = "src/mlrp/source"
 SOURCE_REPOSITORY = "github.com/ochofer/stock-level-tracking"
-SOURCE_COMMIT = None             # set with the copies
+SOURCE_COMMIT = "0dabbb016492707b2f2e14884bceae89f088e1d6"
 COPIED_MODULES = ("extraction.py", "universe.py", "returns.py", "sectors.py", "sorts.py", "french.py", "layer.py")
-COPIED_FILES = None              # {file: (source path, SHA-256)}, set with the copies
-SOURCE_CONSTANTS_SHA256 = None   # the SHA-256 of the source's constants file at SOURCE_COMMIT, set with the copies
+COPIED_FILES = {                 # file: (its path in the source repository, its SHA-256 at SOURCE_COMMIT)
+    "extraction.py": ("src/slt/extraction.py", "72f61ed8e8460684b869534c377dbd026fac98779a121e199fac078e1db5c0a3"),
+    "universe.py": ("src/slt/universe.py", "c9c6bc68abba106abd3d05632d6ace1a5f751119f17779da99e9fb6db14e0f75"),
+    "returns.py": ("src/slt/returns.py", "02f1cc8034a24b6f3677cfa1eb5f312f558e7876251c26f5dc516ec0222aeb45"),
+    "sectors.py": ("src/slt/sectors.py", "030fbe948075bbcbd781cfa2e6e7a9fcbcf9bfc38eb29fba8731afab7731c21c"),
+    "sorts.py": ("src/slt/sorts.py", "50954e2de053b600f85c118b1c7d605bf713e24b06983fbc6a137d690a79489e"),
+    "french.py": ("src/slt/french.py", "1cac5eff1cf3d5cffe2c09d993d5ad35cf5f1400110bcf4e434c20babad2b0d2"),
+    "layer.py": ("src/slt/layer.py", "8c8b919f1f26215d933bf57b338e56afd64356ac2e02cc19f6e569eede1964fc"),
+}
+SOURCE_CONSTANTS_FILE = "src/slt/constants.py"
+SOURCE_CONSTANTS_SHA256 = "5a3c817e834a95b95dcd639895196004e717ffce4116974620f167a5bdacee4a"   # at SOURCE_COMMIT
 
 # Gate G1 (a) compares the copied layer's counts with three tables the source
-# repository committed at the commit the copies are taken from. Read on
-# 19 November 2026: the three are byte for byte the same at 75ce238 and at
-# 1d57cbf of the source repository.
+# repository committed at the commit the copies are taken from, SOURCE_COMMIT.
+# Read on 19 and 20 November 2026: the three are byte for byte the same at
+# 75ce238, at 1d57cbf and at 0dabbb0 of the source repository.
 G1A_REFERENCE_TABLES = (
     "results/20260928/universe_summary.json",
     "results/20260928/universe_count_check_by_year.csv",
@@ -356,7 +382,7 @@ INTERVAL_LEVEL = 0.95
 BOOTSTRAP_SOURCE_REPOSITORY = "github.com/ochofer/volatility-managed-portfolios"
 BOOTSTRAP_SOURCE_COMMIT = "74ed6d1"
 BOOTSTRAP_FILE = "src/sq/bootstrap.py"
-BOOTSTRAP_SHA256 = None          # set with the copies
+BOOTSTRAP_SHA256 = "6b713dce9b1f969e3862acf5fedf2b4f55f88251c963af613a09fdbfdc9ef89e"   # at BOOTSTRAP_SOURCE_COMMIT, copied into src/mlrp/source/bootstrap.py. Set on 20 November 2026
 
 # The size checks of the three tests that expectations E3, E4 and E6 read: the
 # rejection rate of each at 228 months on made-up data, and the difference each

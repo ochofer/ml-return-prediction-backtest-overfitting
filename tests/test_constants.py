@@ -119,15 +119,22 @@ def test_the_record_of_the_data():
     assert C.DATA_ROOT_ENV == "MLRP_DATA_ROOT"
 
 
-def test_the_copies_are_named_and_still_to_be_set():
+def test_the_copies_are_named_with_their_commits_and_hashes():
     assert len(C.COPIED_MODULES) == len(set(C.COPIED_MODULES)) == 7
     assert "constants.py" not in C.COPIED_MODULES
-    assert C.SOURCE_COMMIT is None or re.fullmatch(r"[0-9a-f]{7,40}", C.SOURCE_COMMIT)
-    assert C.COPIED_FILES is None or set(C.COPIED_FILES) == set(C.COPIED_MODULES)
-    assert C.SOURCE_CONSTANTS_SHA256 is None or re.fullmatch(r"[0-9a-f]{64}", C.SOURCE_CONSTANTS_SHA256)
-    assert C.BOOTSTRAP_SHA256 is None or re.fullmatch(r"[0-9a-f]{64}", C.BOOTSTRAP_SHA256)
+    assert re.fullmatch(r"[0-9a-f]{40}", C.SOURCE_COMMIT)
+    assert set(C.COPIED_FILES) == set(C.COPIED_MODULES)
+    for name, (path, digest) in C.COPIED_FILES.items():
+        assert path == "src/slt/" + name and re.fullmatch(r"[0-9a-f]{64}", digest)
+    assert re.fullmatch(r"[0-9a-f]{64}", C.SOURCE_CONSTANTS_SHA256)
+    assert re.fullmatch(r"[0-9a-f]{64}", C.BOOTSTRAP_SHA256)
     assert re.fullmatch(r"[0-9a-f]{7,40}", C.BOOTSTRAP_SOURCE_COMMIT)
     assert len(C.G1A_REFERENCE_TABLES) == 3
+
+
+def test_the_digest_of_the_manifest_entries():
+    assert re.fullmatch(r"[0-9a-f]{64}", C.MANIFEST_ENTRIES_SHA256)
+    assert len(C.TABLES) <= C.MANIFEST_ENTRIES <= C.MANIFEST_FILES
 
 
 def test_the_seed_and_its_streams():

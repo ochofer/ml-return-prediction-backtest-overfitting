@@ -1,12 +1,14 @@
 # ml-return-prediction-backtest-overfitting
 
-This study is in build. It has reached none of its five milestones: the first, the panel, is in progress, and the repository holds its settings and their tests.
+This study is in build. It has reached none of its five milestones: the first, the panel, is in progress. The repository holds its settings and their tests, the overfitting statistics with their known-answer simulation on made-up returns, and the code copied from two other studies to read the data.
 
 The study measures two things on the S&P 500's point-in-time members from January 1991 to December 2024. First, how much machine-learning models add to linear models in forecasting each member's return in the next month, out of sample. Second, how much of the best backtest's Sharpe ratio is left after a correction for the number of trials. It follows the method of Gu, Kelly and Xiu (2020), reduced to twelve characteristics and the index's members, and measures the overfitting with the deflated Sharpe ratio of Bailey and López de Prado (2014) and the probability of backtest overfitting of Bailey, Borwein, López de Prado and Zhu (2017).
 
 ## Data
 
 CRSP and Compustat, via Wharton Research Data Services, accessed through Queen Mary University of London, in an extraction of 28 September 2026, and Kenneth French's data library. The repository holds no data: code, tests and aggregates only.
+
+The universe, the monthly returns and the reading of the extraction come from the data layer of [Stock-Level Tracking](https://github.com/ochofer/stock-level-tracking), whose seven modules are copied unchanged into `src/mlrp/source/` from its commit 0dabbb0. The interval for the difference of two Sharpe ratios comes from [Signal Evaluation](https://github.com/ochofer/volatility-managed-portfolios), whose `bootstrap.py` is copied unchanged from its commit 74ed6d1. The SHA-256 of each copy is in `src/mlrp/constants.py`, and the tests check every copy against it. `src/mlrp/data.py` calls the copies with this study's settings.
 
 ## Settings
 
