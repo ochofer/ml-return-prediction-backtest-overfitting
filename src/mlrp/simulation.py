@@ -10,8 +10,14 @@ backtest overfitting should sit near one half. With one trial given a true Sharp
 1.0 a year, that trial should be the best and the probability of backtest overfitting should
 fall. The four clauses of gate G3 test these answers. No licensed data are read.
 
-The draws come from the seed's stream for this simulation, with one sub-stream per clause,
-so that each clause's draws are the same whatever the number of repetitions of the others.
+The draws come from the seed's stream for this simulation, with one sub-stream per clause
+(constants section 14), so that each clause's draws are the same whatever the number of
+repetitions of the others.
+
+Beside the clauses, and read by no level, the module computes the exact expected best Sharpe
+ratio of trials with no effect, against which the formula of clause (a) is an approximation,
+and the splits of clause (d): how often the trial with the true effect is picked on one half
+of the months, and which splits make up the probability of backtest overfitting.
 """
 from __future__ import annotations
 
@@ -24,18 +30,18 @@ import platform
 import numpy as np
 import pandas as pd
 import scipy
+from scipy import integrate, stats
 
 from . import constants as C
 from . import overfitting as O
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 RESULTS_DIR = ROOT / "results" / "simulation"
-CLAUSE_STREAMS = {"a_b": 0, "c": 1, "d": 2}
 
 
 def rng_for(clause: str) -> np.random.Generator:
     """The random generator of one clause: the study's seed, this simulation's stream and the clause's sub-stream."""
-    return np.random.default_rng([C.SEED, C.SEED_STREAMS["known_answer"], CLAUSE_STREAMS[clause]])
+    return np.random.default_rng([C.SEED, C.SEED_STREAMS["known_answer"], C.KNOWN_ANSWER_SUB_STREAMS[clause]])
 
 
 def made_up_returns(rng: np.random.Generator, months: int, trials: int, planted_monthly_sharpe: float = 0.0) -> np.ndarray:
@@ -120,11 +126,99 @@ def verdicts(ab: pd.DataFrame, c: pd.DataFrame, d: pd.DataFrame, months: int = C
     return out
 
 
+def expected_max_standard_normal(trials: int) -> float:
+    """The expected highest of `trials` independent standard normal numbers, by numerical
+    integration: the integral of x times the density of the highest, N f(x) F(x)^(N-1), where
+    f and F are the standard normal density and distribution function."""
+    def integrand(x):
+        return x * trials * stats.norm.pdf(x) * stats.norm.cdf(x) ** (trials - 1)
+    value, _ = integrate.quad(integrand, -np.inf, np.inf)
+    return float(value)
+
+
+def sharpe_sd_no_effect(months: int) -> float:
+    """The standard deviation of one trial's monthly Sharpe ratio over `months` independent
+    normal months with a true mean of zero. The square root of the number of months times the
+    Sharpe ratio is the t-statistic of the mean, which follows Student's t distribution with
+    months - 1 degrees of freedom. Its variance is (T - 1) / (T - 3), so the Sharpe ratio's
+    standard deviation is the square root of (T - 1) / ((T - 3) T)."""
+    return math.sqrt(float(stats.t(months - 1).var()) / months)
+
+
+def exact_expected_best_sharpe(months: int = C.G3_MONTHS, trials: int = C.G3_TRIALS) -> float:
+    """The expected highest of `trials` independent monthly Sharpe ratios with no effect over
+    `months` normal months, by numerical integration over the Student's t distribution of the
+    square root of the months times each Sharpe ratio. This is the exact value that the formula
+    of Bailey and López de Prado (2014) approximates."""
+    t = stats.t(months - 1)
+
+    def integrand(x):
+        return x * trials * t.pdf(x) * t.cdf(x) ** (trials - 1)
+    value, _ = integrate.quad(integrand, -np.inf, np.inf)
+    return float(value) / math.sqrt(months)
+
+
+def beside_clause_a(ab: pd.DataFrame, months: int = C.G3_MONTHS, trials: int = C.G3_TRIALS) -> dict:
+    """The simulation's mean best Sharpe ratio against the exact expected value, with the mean's
+    standard error, the standard deviation of the best Sharpe ratios over the square root of the
+    number of repetitions, and the distance between the two in standard errors. No level reads it."""
+    exact = exact_expected_best_sharpe(months, trials)
+    mean = float(ab["best_sharpe"].mean())
+    se = float(ab["best_sharpe"].std(ddof=1)) / math.sqrt(len(ab))
+    return {"repetitions": int(len(ab)), "mean_best_sharpe": mean, "standard_error": se,
+            "exact_expected_best_sharpe": exact, "distance_in_standard_errors": (mean - exact) / se,
+            "mean_over_exact": mean / exact,
+            "formula_expected_best_sharpe": O.expected_max_sharpe(trials, 1 / (months - 1)),
+            "formula_over_exact": O.expected_max_sharpe(trials, 1 / (months - 1)) / exact,
+            "expected_max_standard_normal": expected_max_standard_normal(trials),
+            "formula_expected_max_standard_normal": O.expected_max_sharpe(trials, 1.0),
+            "sharpe_sd_no_effect": sharpe_sd_no_effect(months),
+            "formula_sharpe_sd": math.sqrt(1 / (months - 1))}
+
+
+def clause_d_splits(repetitions: int = C.G3_REPETITIONS_C_D, months: int = C.G3_MONTHS,
+                    trials: int = C.G3_TRIALS, blocks: int = C.G3_BLOCKS) -> pd.DataFrame:
+    """The draws of clause (d) again, split by split. Per repetition, counts out of the splits:
+    the splits in which the planted trial is the in-sample best, the splits in which another
+    trial is the in-sample best and ranks in the lower half out-of-sample, and the splits in
+    which the planted trial is the in-sample best and ranks there. The last two together are
+    the splits that the probability of backtest overfitting counts."""
+    rng = rng_for("d")
+    planted = planted_monthly_sharpe()
+    rows = []
+    for i in range(repetitions):
+        r = made_up_returns(rng, months, trials, planted)
+        out = O.probability_of_backtest_overfitting(r, blocks)
+        picked = out["best_in_sample"] == 0
+        lower = out["logits"] <= 0
+        rows.append((i, out["splits"], int(picked.sum()), int((~picked & lower).sum()), int((picked & lower).sum())))
+    return pd.DataFrame(rows, columns=["repetition", "splits", "planted_picked", "other_picked_lower", "planted_picked_lower"])
+
+
+def beside_clause_d(splits: pd.DataFrame) -> dict:
+    """The share of the splits in which the planted trial is the in-sample best, as its mean and
+    its median over the repetitions, and the mean probability of backtest overfitting in two
+    parts: from the splits in which another trial is picked, and from those in which the planted
+    trial is picked. Of the splits in which another trial is picked, the share that ends in the
+    lower half out-of-sample is pooled over the repetitions. No level reads it."""
+    n = splits["splits"]
+    share_planted = splits["planted_picked"] / n
+    other_picked = (n - splits["planted_picked"]).sum()
+    return {"repetitions": int(len(splits)), "splits": int(n.iloc[0]),
+            "share_planted_picked_mean": float(share_planted.mean()),
+            "share_planted_picked_median": float(share_planted.median()),
+            "share_other_picked_mean": float(1 - share_planted.mean()),
+            "share_lower_when_other_picked": float(splits["other_picked_lower"].sum() / other_picked) if other_picked else None,
+            "pbo_from_other_picked": float((splits["other_picked_lower"] / n).mean()),
+            "pbo_from_planted_picked": float((splits["planted_picked_lower"] / n).mean()),
+            "mean_pbo": float(((splits["other_picked_lower"] + splits["planted_picked_lower"]) / n).mean())}
+
+
 def settings() -> dict:
     """The settings the run used, read from the constants."""
     return {"months": C.G3_MONTHS, "trials": C.G3_TRIALS, "blocks": C.G3_BLOCKS,
             "repetitions_a_b": C.G3_REPETITIONS_A_B, "repetitions_c_d": C.G3_REPETITIONS_C_D,
-            "seed": C.SEED, "stream": C.SEED_STREAMS["known_answer"], "clause_streams": CLAUSE_STREAMS}
+            "seed": C.SEED, "stream": C.SEED_STREAMS["known_answer"], "clause_streams": C.KNOWN_ANSWER_SUB_STREAMS}
 
 
 def write_results(ab: pd.DataFrame, c: pd.DataFrame, d: pd.DataFrame, summary: dict, written_by: str) -> list:
@@ -150,3 +244,21 @@ def write_results(ab: pd.DataFrame, c: pd.DataFrame, d: pd.DataFrame, summary: d
         json.dump(record, f, indent=1)
         f.write("\n")
     return paths + [RESULTS_DIR / "g3_summary.json", RESULTS_DIR / "provenance.json"]
+
+
+def _twelve_digits(figures: dict) -> dict:
+    """The figures with every number rounded to 12 significant digits, as the tables are written,
+    so that a run on another machine writes the same bytes."""
+    return {k: float(f"{v:.12g}") if isinstance(v, float) else v for k, v in figures.items()}
+
+
+def write_figures_beside(a: dict, d: dict, written_by: str, directory: pathlib.Path = RESULTS_DIR) -> pathlib.Path:
+    """Write the figures beside clauses (a) and (d) to a file of their own in results/simulation/.
+    They depend on the seed alone, and no level reads them."""
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / "g3_figures_beside.json"
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump({"written_by": written_by, "settings": settings(), "beside_clause_a": _twelve_digits(a),
+                   "beside_clause_d": _twelve_digits(d)}, f, indent=1)
+        f.write("\n")
+    return path

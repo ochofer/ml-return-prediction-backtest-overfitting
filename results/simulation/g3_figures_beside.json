@@ -1,0 +1,42 @@
+{
+ "written_by": "notebooks/12_known_answer.ipynb",
+ "settings": {
+  "months": 228,
+  "trials": 32,
+  "blocks": 12,
+  "repetitions_a_b": 4000,
+  "repetitions_c_d": 1000,
+  "seed": 20261119,
+  "stream": 2,
+  "clause_streams": {
+   "a_b": 0,
+   "c": 1,
+   "d": 2
+  }
+ },
+ "beside_clause_a": {
+  "repetitions": 4000,
+  "mean_best_sharpe": 0.137492128477,
+  "standard_error": 0.000515243873311,
+  "exact_expected_best_sharpe": 0.137985632704,
+  "distance_in_standard_errors": -0.957807073355,
+  "mean_over_exact": 0.996423510066,
+  "formula_expected_best_sharpe": 0.139373147715,
+  "formula_over_exact": 1.01005550349,
+  "expected_max_standard_normal": 2.06966882793,
+  "formula_expected_max_standard_normal": 2.09986820229,
+  "sharpe_sd_no_effect": 0.066520307178,
+  "formula_sharpe_sd": 0.06637233116
+ },
+ "beside_clause_d": {
+  "repetitions": 1000,
+  "splits": 924,
+  "share_planted_picked_mean": 0.818335497835,
+  "share_planted_picked_median": 0.885281385281,
+  "share_other_picked_mean": 0.181664502165,
+  "share_lower_when_other_picked": 0.54312573723,
+  "pbo_from_other_picked": 0.0986666666667,
+  "pbo_from_planted_picked": 0.000993506493506,
+  "mean_pbo": 0.0996601731602
+ }
+}

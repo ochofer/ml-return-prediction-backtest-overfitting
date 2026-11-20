@@ -430,9 +430,12 @@ CV_MODELS = ("elastic_net", "boosted_trees")
 #     of those repetitions, and its median lies between 0.40 and 0.60.
 # (c) The mean probability of backtest overfitting over 1,000 repetitions lies
 #     between 0.45 and 0.55.
-# (d) With one trial given a true Sharpe ratio of 1.0 a year, that trial is the
-#     in-sample best in at least 90 per cent of 1,000 repetitions, and the mean
+# (d) With one trial given a true Sharpe ratio of 1.0 a year, that trial has the
+#     highest Sharpe ratio over the 228 months, as section 11 defines the best
+#     trial, in at least 90 per cent of 1,000 repetitions, and the mean
 #     probability of backtest overfitting is below 0.25.
+#     The words of the first part of (d) were written on 20 November 2026, after
+#     the run of 19 November. Its level stands as committed before the run.
 # On a failure the statistic's code is corrected, each change recorded, the same
 # seed run again, and no level changes.
 G3_MONTHS = 228
@@ -507,3 +510,10 @@ SEED_STREAMS = {
     "made_up_data": 5,           # the tests' and the proposals' made-up data
     "size_checks": 6,            # the size checks of E3, E4 and E6
 }
+
+# Gate G3's simulation draws each clause from a sub-stream of its stream:
+# numpy.random.default_rng([SEED, SEED_STREAMS["known_answer"],
+#                           KNOWN_ANSWER_SUB_STREAMS[clause]]),
+# so that each clause's draws are the same whatever the number of repetitions of
+# the others. Set with the simulation's code on 19 November 2026.
+KNOWN_ANSWER_SUB_STREAMS = {"a_b": 0, "c": 1, "d": 2}

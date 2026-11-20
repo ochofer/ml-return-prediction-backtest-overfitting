@@ -30,7 +30,10 @@ def code(text):
             "source": text.strip("\n").splitlines(keepends=True)}
 
 
-def notebook(cells):
+def notebook(number, cells):
+    # Each cell carries an id, as nbformat 4.5 requires, made of the notebook's number and the cell's position,
+    # so that a build writes the same bytes every time.
+    cells = [dict(c, id=f"{number}-{i:02d}") for i, c in enumerate(cells)]
     return {"cells": cells, "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
                                          "language_info": {"name": "python"}},
             "nbformat": 4, "nbformat_minor": 5}
@@ -60,6 +63,8 @@ NB12 = [
 | Sharpe ratio | the mean monthly return over the standard deviation of the monthly returns. In this notebook it is monthly and never annualised |
 | standard error | the standard deviation of an estimate across repetitions: how far an estimate typically lands from its true value |
 | expected best Sharpe ratio | the mean of the highest of N Sharpe ratios when no trial has a true effect, from the formula of Bailey and López de Prado (2014) |
+| Student's t distribution | the distribution of a sample's mean over its estimated standard error, when the sample is normal with a true mean of zero. It has one setting, the degrees of freedom: the sample's length less one. With many degrees of freedom it is close to the standard normal distribution, with slightly more extreme values |
+| numerical integration | computing an integral from the values of its function at many points, here with `scipy.integrate.quad` |
 | kurtosis | the mean of the fourth power of the returns' distance from their mean, over the square of their variance. It is 3 for normal returns |
 | deflated Sharpe ratio | the confidence, from 0 to 1, that the best trial's true Sharpe ratio is above the expected best Sharpe ratio of N trials with no true effect (Bailey and López de Prado 2014) |
 | in-sample | the half of the months on which the best trial is picked |
@@ -97,7 +102,7 @@ print("months", C.G3_MONTHS, "| trials", C.G3_TRIALS, "| blocks", C.G3_BLOCKS,
     md('''
 ## 1. One repetition
 
-The random generator starts from the study's seed, on the stream kept for this simulation, with one sub-stream for each clause. `numpy.random.default_rng` creates the generator, and its method `standard_normal` fills a table of the given shape with draws from the standard normal distribution: mean zero, standard deviation one. The cell makes the first repetition of clauses (a) and (b) and shows its first five months for its first five trials, then the Sharpe ratio of every trial. With a standard deviation of one, a trial's Sharpe ratio is its mean return.
+The random generator starts from the study's seed, on the stream kept for this simulation, with one sub-stream for each clause. `numpy.random.default_rng` creates the generator, and its method `standard_normal` fills a table of the given shape with draws from the standard normal distribution: mean zero, standard deviation one. The cell makes the first repetition of clauses (a) and (b) and shows its first five months for its first five trials, then the Sharpe ratio of every trial. The true standard deviation is one, and over 228 months each trial's sample standard deviation is close to one, so a trial's Sharpe ratio is close to its mean return.
 '''),
     code('''
 rng = S.rng_for("a_b")
@@ -137,6 +142,28 @@ Each repetition keeps two numbers: the best Sharpe ratio and the deflated Sharpe
 ab = S.clauses_a_b()
 ab[["best_sharpe", "deflated_sharpe_ratio"]].describe().round(4)'''),
     md('''
+**The exact expected best Sharpe ratio.** The figures of this part of the step were added on 20 November 2026, after the run of 19 November, and no level reads them.
+
+The formula of step 2 is an approximation. Its multiplier, the part in brackets, approximates the expected highest of 32 standard normal numbers: it gives 2.0999, where numerical integration gives 2.0697. The exact expected best Sharpe ratio of 32 trials with no effect follows from the distribution of one trial's Sharpe ratio:
+
+- √T times a trial's Sharpe ratio is the t-statistic of its mean return, which follows Student's t distribution with T - 1 = 227 degrees of freedom.
+- That distribution has a variance of (T - 1) / (T - 3), so one Sharpe ratio has a standard deviation of √((T - 1) / ((T - 3) T)) = 0.0665 at T = 228, where the formula uses √(1 / 227) = 0.0664.
+- The expected highest of 32 independent Sharpe ratios of that distribution is an integral, which `scipy.integrate.quad` computes: 0.1380 a month, where the formula gives 0.1394.
+
+The cell prints these with the simulation's mean best Sharpe ratio, its standard error (the standard deviation of the 4,000 best Sharpe ratios over √4,000) and the distance between the mean and the exact value in standard errors.
+'''),
+    code('''
+a_beside = S.beside_clause_a(ab)
+rows = [
+    ("expected highest of 32 standard normal numbers", a_beside["expected_max_standard_normal"], a_beside["formula_expected_max_standard_normal"]),
+    ("standard deviation of one Sharpe ratio, no effect", a_beside["sharpe_sd_no_effect"], a_beside["formula_sharpe_sd"]),
+    ("expected best Sharpe ratio", a_beside["exact_expected_best_sharpe"], a_beside["formula_expected_best_sharpe"]),
+]
+display(pd.DataFrame(rows, columns=["figure", "exact", "formula"]).round(4))
+print("simulation: mean best Sharpe ratio", round(a_beside["mean_best_sharpe"], 5),
+      "| standard error", round(a_beside["standard_error"], 5),
+      "| distance from the exact value", round(a_beside["distance_in_standard_errors"], 2), "standard errors")'''),
+    md('''
 ## 4. The probability of backtest overfitting, on one repetition
 
 The 228 months are cut into 12 blocks of 19 months in their order. Every choice of 6 of the 12 blocks is one split: those 6 blocks are the in-sample half and the other 6 the out-of-sample half, which gives 924 splits. In each split the trial with the highest in-sample Sharpe ratio is picked, and its out-of-sample Sharpe ratio is ranked among the 32, from 1 for the lowest to 32 for the highest. The rank over 33 is its relative rank w, and the logit log(w / (1 - w)) is at or below zero when the picked trial lands in the lower half. The probability of backtest overfitting is the share of the 924 splits with a logit at or below zero. The cell runs it on the repetition of step 1.
@@ -163,9 +190,33 @@ d = S.clause_d()
 print("planted trial best in", round(100 * d["planted_is_best"].mean(), 1), "per cent of", len(d), "repetitions")
 d["pbo"].describe().round(4)'''),
     md('''
+**The splits of clause (d).** The figures of this part of the step were added on 20 November 2026, after the run of 19 November, and no level reads them.
+
+Clause (d) counts repetitions: in each one, the planted trial has or has not the highest Sharpe ratio over the 228 months. The probability of backtest overfitting counts splits, and in each split the best trial is picked on one half of the months, 6 blocks of 19, which is 114 months. For each repetition the cell counts three kinds of split:
+
+- the splits in which the planted trial is the in-sample best
+- the splits in which another trial is the in-sample best and ranks in the lower half out-of-sample
+- the splits in which the planted trial is the in-sample best and ranks in the lower half out-of-sample
+
+The last two kinds together are the splits that the probability of backtest overfitting counts, so its mean over the repetitions is the sum of two parts. A half of 114 months picks the planted trial less often than the whole window of 228 months does, and the splits in which another trial is picked are where a probability above zero comes from.
+'''),
+    code('''
+splits = S.clause_d_splits()
+d_beside = S.beside_clause_d(splits)
+rows = [
+    ("share of splits with the planted trial picked, mean over repetitions", d_beside["share_planted_picked_mean"]),
+    ("share of splits with the planted trial picked, median over repetitions", d_beside["share_planted_picked_median"]),
+    ("share of splits with another trial picked, mean over repetitions", d_beside["share_other_picked_mean"]),
+    ("of the splits with another trial picked, the share in the lower half out-of-sample", d_beside["share_lower_when_other_picked"]),
+    ("probability of backtest overfitting from the splits with another trial picked", d_beside["pbo_from_other_picked"]),
+    ("probability of backtest overfitting from the splits with the planted trial picked", d_beside["pbo_from_planted_picked"]),
+    ("mean probability of backtest overfitting, the two parts together", d_beside["mean_pbo"]),
+]
+display(pd.DataFrame(rows, columns=["figure", "value"]).round(4))'''),
+    md('''
 ## 7. The verdicts
 
-The four clauses against their levels. The cell writes the three tables of repetitions, the summary and the provenance record to `results/simulation/`.
+The four clauses against their levels. The cell writes the three tables of repetitions, the summary and the provenance record to `results/simulation/`, and the figures of steps 3 and 6 that no level reads to a file of their own there, `g3_figures_beside.json`.
 '''),
     code('''
 v = S.verdicts(ab, c, d)
@@ -183,7 +234,9 @@ print("expected best Sharpe ratio:", round(v["a"]["expected_best_sharpe"], 4), "
 print("Gate G3:", word[v["all_met"]])
 
 for path in S.write_results(ab, c, d, v, written_by="notebooks/12_known_answer.ipynb"):
-    print("written:", path.relative_to(ROOT))'''),
+    print("written:", path.relative_to(ROOT))
+path = S.write_figures_beside(a_beside, d_beside, written_by="notebooks/12_known_answer.ipynb")
+print("written:", path.relative_to(ROOT))'''),
     md('''
 ## What was learned, and what could be wrong
 
@@ -203,9 +256,9 @@ What could be wrong, and where each point is taken up:
 
 def main():
     NOTEBOOKS.mkdir(exist_ok=True)
-    for name, cells in (("12_known_answer.ipynb", NB12),):
+    for number, name, cells in (("12", "12_known_answer.ipynb", NB12),):
         with open(NOTEBOOKS / name, "w", encoding="utf-8") as f:
-            json.dump(notebook(cells), f, indent=1, ensure_ascii=False)
+            json.dump(notebook(number, cells), f, indent=1, ensure_ascii=False)
             f.write("\n")
         print("built", name)
 

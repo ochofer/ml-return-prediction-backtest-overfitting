@@ -1,5 +1,7 @@
 """The known-answer simulation draws what it says, from the seed alone, with one stream per clause, and
-its verdicts read the levels of the constants. These tests use six repetitions and judge nothing."""
+its verdicts read the levels of the constants, and the figures beside clauses (a) and (d) are computed as
+their docstrings say. These tests use six repetitions and judge nothing."""
+import json
 import math
 import pathlib
 import sys
@@ -58,3 +60,81 @@ def test_the_figures_the_notebook_quotes_before_its_run():
     assert round(1 / math.sqrt(C.G3_MONTHS - 1), 3) == 0.066
     assert round(O.expected_max_sharpe(C.G3_TRIALS - 1, 1 / (C.G3_MONTHS - 1)), 3) == 0.139
     assert C.PBO_SPLITS == 924 and C.G3_MONTHS // C.G3_BLOCKS == 19
+
+
+def test_the_figures_the_notebook_quotes_beside_clauses_a_and_d():
+    # Notebook 12 quotes these in steps 3 and 6. None of them depends on the run.
+    assert round(O.expected_max_sharpe(C.G3_TRIALS, 1.0), 4) == 2.0999
+    assert round(S.expected_max_standard_normal(C.G3_TRIALS), 4) == 2.0697
+    assert round(S.sharpe_sd_no_effect(C.G3_MONTHS), 4) == 0.0665
+    assert round(math.sqrt(1 / (C.G3_MONTHS - 1)), 4) == 0.0664
+    assert round(S.exact_expected_best_sharpe(C.G3_MONTHS, C.G3_TRIALS), 4) == 0.1380
+    assert round(O.expected_max_sharpe(C.G3_TRIALS, 1 / (C.G3_MONTHS - 1)), 4) == 0.1394
+    assert (C.G3_BLOCKS // 2) * (C.G3_MONTHS // C.G3_BLOCKS) == 114
+
+
+def test_the_sub_streams_are_set_in_the_constants():
+    assert not hasattr(S, "CLAUSE_STREAMS")
+    assert S.settings()["clause_streams"] is C.KNOWN_ANSWER_SUB_STREAMS
+    for clause, sub in C.KNOWN_ANSWER_SUB_STREAMS.items():
+        direct = np.random.default_rng([C.SEED, C.SEED_STREAMS["known_answer"], sub]).standard_normal(5)
+        assert np.array_equal(S.rng_for(clause).standard_normal(5), direct)
+
+
+def test_the_expected_highest_standard_normal_number_has_its_known_values():
+    # The highest of one number has mean zero, of two 1 / sqrt(pi), of three 3 / (2 sqrt(pi)).
+    assert abs(S.expected_max_standard_normal(1)) < 1e-10
+    assert math.isclose(S.expected_max_standard_normal(2), 1 / math.sqrt(math.pi), rel_tol=1e-9)
+    assert math.isclose(S.expected_max_standard_normal(3), 3 / (2 * math.sqrt(math.pi)), rel_tol=1e-9)
+
+
+def test_the_standard_deviation_of_a_sharpe_ratio_with_no_effect():
+    for t in (10, 60, 228):
+        assert math.isclose(S.sharpe_sd_no_effect(t), math.sqrt((t - 1) / ((t - 3) * t)), rel_tol=1e-12)
+    rng = np.random.default_rng([C.SEED, C.SEED_STREAMS["made_up_data"]])
+    sharpe = O.sharpe_ratio(rng.standard_normal((24, 20000)))
+    assert abs(sharpe.std(ddof=1) / S.sharpe_sd_no_effect(24) - 1) < 0.02
+
+
+def test_the_exact_expected_best_sharpe_ratio_agrees_with_draws_and_with_the_normal_limit():
+    assert abs(S.exact_expected_best_sharpe(228, 1)) < 1e-10
+    # Over many months the Sharpe ratio is close to normal, so the exact value nears the normal one.
+    big = 1_000_000
+    assert math.isclose(S.exact_expected_best_sharpe(big, 32), S.expected_max_standard_normal(32) / math.sqrt(big), rel_tol=1e-4)
+    # Against the highest of 32 draws of Student's t over 20,000 rows, within four standard errors.
+    rng = np.random.default_rng([C.SEED, C.SEED_STREAMS["made_up_data"]])
+    highest = rng.standard_t(C.G3_MONTHS - 1, size=(20000, C.G3_TRIALS)).max(axis=1) / math.sqrt(C.G3_MONTHS)
+    se = highest.std(ddof=1) / math.sqrt(len(highest))
+    assert abs(highest.mean() - S.exact_expected_best_sharpe()) < 4 * se
+
+
+def test_the_figures_beside_clause_a():
+    ab = S.clauses_a_b(FEW)
+    out = S.beside_clause_a(ab)
+    assert out["mean_best_sharpe"] == ab["best_sharpe"].mean()
+    assert math.isclose(out["standard_error"], ab["best_sharpe"].std(ddof=1) / math.sqrt(FEW))
+    assert math.isclose(out["distance_in_standard_errors"],
+                        (out["mean_best_sharpe"] - out["exact_expected_best_sharpe"]) / out["standard_error"])
+    assert out["formula_expected_best_sharpe"] == S.verdicts(ab, S.clause_c(FEW), S.clause_d(FEW))["a"]["expected_best_sharpe"]
+
+
+def test_the_splits_of_clause_d_add_up_to_its_probability():
+    splits, d = S.clause_d_splits(FEW), S.clause_d(FEW)
+    assert (splits["splits"] == C.PBO_SPLITS).all()
+    assert ((splits["other_picked_lower"] + splits["planted_picked_lower"]) / splits["splits"]).equals(d["pbo"])
+    assert (splits["planted_picked_lower"] <= splits["planted_picked"]).all()
+    assert (splits["other_picked_lower"] <= splits["splits"] - splits["planted_picked"]).all()
+    out = S.beside_clause_d(splits)
+    assert math.isclose(out["pbo_from_other_picked"] + out["pbo_from_planted_picked"], d["pbo"].mean())
+    assert math.isclose(out["mean_pbo"], d["pbo"].mean())
+    assert math.isclose(out["share_planted_picked_mean"] + out["share_other_picked_mean"], 1)
+
+
+def test_the_figures_beside_are_written_to_a_file_of_their_own(tmp_path):
+    a = S.beside_clause_a(S.clauses_a_b(FEW))
+    d = S.beside_clause_d(S.clause_d_splits(FEW))
+    path = S.write_figures_beside(a, d, written_by="test", directory=tmp_path)
+    assert path == tmp_path / "g3_figures_beside.json" and list(tmp_path.iterdir()) == [path]
+    saved = json.load(open(path, encoding="utf-8"))
+    assert saved["settings"] == json.loads(json.dumps(S.settings()))
+    assert math.isclose(saved["beside_clause_d"]["mean_pbo"], d["mean_pbo"], rel_tol=1e-11)
