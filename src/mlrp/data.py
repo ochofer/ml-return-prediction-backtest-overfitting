@@ -15,8 +15,9 @@ hold in this repository, and this module wraps the copies so that none of them i
 
 Every run opens the extraction with open_extraction(). It checks the manifest's hash against
 constants.MANIFEST_SHA256 with the copied check, then the eight tables' entries in the manifest against
-constants.MANIFEST_ENTRIES_SHA256, and reads nothing when either differs. What the functions that write to the
-repository receive is metadata and aggregates: no row of a licensed table passes through them.
+constants.MANIFEST_ENTRIES_SHA256, and reads nothing when either differs. The functions that write to the
+repository are written to receive metadata and aggregates, as the data rules require. The frames with one row
+per security that one notebook builds and a later one reads are kept in constants.LOCAL_DIR, which git ignores.
 """
 from __future__ import annotations
 
@@ -26,6 +27,7 @@ import hashlib
 import json
 import os
 import pathlib
+import subprocess
 
 from . import constants as C
 from .source import extraction as X
@@ -201,6 +203,57 @@ def provenance(manifest: dict, records: list, written_by: str) -> dict:
         "written_by": written_by,
         "written_at": dt.datetime.now().astimezone().strftime("%Y-%m-%d %H:%M %Z"),
     }
+
+
+def local_dir() -> pathlib.Path:
+    """The folder of the frames with one row per security kept between notebooks, under the repository's root
+    and ignored by git. It exists only on the machine that holds the extraction."""
+    return ROOT / C.LOCAL_DIR
+
+
+def write_local(name: str, frame) -> pathlib.Path:
+    """Keep one frame with one row per security in local_dir(), as parquet, for a later notebook."""
+    folder = local_dir()
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / name
+    frame.to_parquet(path, index=False)
+    return path
+
+
+def read_local(name: str):
+    """A frame an earlier notebook kept in local_dir(). Stops with one sentence when it is not there."""
+    import pandas as pd
+    path = local_dir() / name
+    if not path.exists():
+        raise SystemExit(f"{name} is not in {C.LOCAL_DIR}: run the notebooks in order, from 01.")
+    return pd.read_parquet(path)
+
+
+# Clones of the source repository that a machine may hold beside this one, by folder name.
+SOURCE_CLONES = ("B-S", "stock-level-tracking")
+
+
+def reference_table(path: str) -> tuple:
+    """One of gate G1 (a)'s three reference tables, the bytes of `path` in the source repository at
+    constants.SOURCE_COMMIT. It is fetched from GitHub by the commit's full hash, which names one version of the
+    file for good. Where GitHub cannot be reached, it is read with git from a clone of the source repository
+    beside this one. Returns the bytes and where they were read."""
+    repository = C.SOURCE_REPOSITORY.split("/", 1)[1]
+    url = f"https://raw.githubusercontent.com/{repository}/{C.SOURCE_COMMIT}/{path}"
+    try:
+        import requests
+        response = requests.get(url, timeout=60)
+        if response.status_code == 200:
+            return response.content, url
+    except Exception:
+        pass
+    for name in SOURCE_CLONES:
+        clone = ROOT.parent / name
+        if (clone / ".git").exists():
+            r = subprocess.run(["git", "show", f"{C.SOURCE_COMMIT}:{path}"], cwd=clone, capture_output=True)
+            if r.returncode == 0:
+                return r.stdout, f"{clone.name} at {C.SOURCE_COMMIT[:7]}"
+    raise SystemExit(f"{path} at {C.SOURCE_COMMIT[:7]} could not be read from GitHub or from a clone beside this one.")
 
 
 def french_folder() -> pathlib.Path:

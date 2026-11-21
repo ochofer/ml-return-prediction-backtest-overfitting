@@ -1,0 +1,49 @@
+{
+ "source": "Kenneth French's data library, downloaded at run time and never committed",
+ "files": [
+  {
+   "key": "factors5_daily",
+   "filename": "F-F_Research_Data_5_Factors_2x3_daily_CSV.zip",
+   "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_5_Factors_2x3_daily_CSV.zip",
+   "fetched_this_run": true,
+   "download_time_utc": "2026-11-21T17:45:10+00:00",
+   "download_time_local": "2026-11-21T18:45:10+01:00",
+   "zip_sha256": "e58577223032aa45071a46686f7068900c371b516c9eb04e28e974c34264f84f",
+   "zip_bytes": 150489,
+   "vintage_line": "This file was created by using the 202609 CRSP database."
+  },
+  {
+   "key": "factors5_monthly",
+   "filename": "F-F_Research_Data_5_Factors_2x3_CSV.zip",
+   "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_5_Factors_2x3_CSV.zip",
+   "fetched_this_run": true,
+   "download_time_utc": "2026-11-21T17:48:24+00:00",
+   "download_time_local": "2026-11-21T18:48:24+01:00",
+   "zip_sha256": "17d7a575e71d6764a70ddec3f8d887756c0eebf3a60f64d6ba95d2adde3fed26",
+   "zip_bytes": 11971,
+   "vintage_line": "This file was created using the 202609 CRSP database."
+  },
+  {
+   "key": "momentum_daily",
+   "filename": "F-F_Momentum_Factor_daily_CSV.zip",
+   "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Momentum_Factor_daily_CSV.zip",
+   "fetched_this_run": true,
+   "download_time_utc": "2026-11-21T17:45:11+00:00",
+   "download_time_local": "2026-11-21T18:45:11+01:00",
+   "zip_sha256": "e56d5bc845544e2993e77353b12c611cfce3149ef754f9b59fc67904ddadd369",
+   "zip_bytes": 85338,
+   "vintage_line": "This file was created by using the 202609 CRSP database."
+  },
+  {
+   "key": "momentum_monthly",
+   "filename": "F-F_Momentum_Factor_CSV.zip",
+   "url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Momentum_Factor_CSV.zip",
+   "fetched_this_run": true,
+   "download_time_utc": "2026-11-21T17:48:25+00:00",
+   "download_time_local": "2026-11-21T18:48:25+01:00",
+   "zip_sha256": "27ed60e5b2caa9ea334a261cddfa864a9926f6bf45e9677c95dfd835c5abb315",
+   "zip_bytes": 5603,
+   "vintage_line": "This file was created using the 202609 CRSP database."
+  }
+ ]
+}

@@ -1,0 +1,46 @@
+{
+ "source": "CRSP and Compustat, via Wharton Research Data Services, accessed through Queen Mary University of London",
+ "extraction_date": "2026-09-28",
+ "manifest_sha256": "23e96d189f4b095936f47a1ebacb4e987fb260726afab4b6e6400c25ebce8693",
+ "manifest_files": 310,
+ "manifest_rows": 112161796,
+ "manifest_entries_sha256": "9e0202735911afd462e0ef6f7a9bf5f3937dc3be94faa863d457abae76b09237",
+ "fetch_dates": {
+  "2026-09-28": [
+   "comp_funda",
+   "crsp_ccm_lnkhist",
+   "crsp_dsf",
+   "crsp_dsp500list",
+   "crsp_msedelist",
+   "crsp_msenames",
+   "crsp_msf",
+   "crsp_msp500"
+  ]
+ },
+ "tables_used": [
+  "comp_funda",
+  "crsp_ccm_lnkhist",
+  "crsp_dsf",
+  "crsp_dsp500list",
+  "crsp_msedelist",
+  "crsp_msenames",
+  "crsp_msf",
+  "crsp_msp500"
+ ],
+ "files_used": 95,
+ "rows_used": 73595093,
+ "copied_from": {
+  "github.com/ochofer/stock-level-tracking": "0dabbb016492707b2f2e14884bceae89f088e1d6",
+  "github.com/ochofer/volatility-managed-portfolios": "74ed6d1"
+ },
+ "versions": {
+  "python": "3.9.6",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "pandas": "2.2.3",
+  "numpy": "2.0.2",
+  "pyarrow": "21.0.0",
+  "scipy": "1.13.1"
+ },
+ "written_by": "notebooks/01_extraction.ipynb",
+ "written_at": "2026-11-21 18:44 CET"
+}

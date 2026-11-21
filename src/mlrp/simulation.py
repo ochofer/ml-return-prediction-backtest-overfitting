@@ -200,15 +200,29 @@ def beside_clause_d(splits: pd.DataFrame) -> dict:
     its median over the repetitions, and the mean probability of backtest overfitting in two
     parts: from the splits in which another trial is picked, and from those in which the planted
     trial is picked. Of the splits in which another trial is picked, the share that ends in the
-    lower half out-of-sample is pooled over the repetitions. No level reads it."""
+    lower half out-of-sample is pooled over the repetitions, with its standard error over the repetitions and
+    the bound it cannot exceed on average. The bound: the two halves of the months are independent, so the
+    out-of-sample rank of a picked trial without an effect is uniform among the trials - 1 trials without one.
+    It ends in the lower half only if at most trials / 2 - 1 of them are below it, which has a probability of
+    (trials / 2) / (trials - 1), 16/31 for 32 trials, and less when the trial with the effect is below it as
+    well. No level reads any of it."""
     n = splits["splits"]
     share_planted = splits["planted_picked"] / n
-    other_picked = (n - splits["planted_picked"]).sum()
+    other = n - splits["planted_picked"]
+    other_picked = other.sum()
+    lower = splits["other_picked_lower"]
+    share_lower = lower.sum() / other_picked if other_picked else np.nan
+    # The standard error of a ratio of two sums over independent repetitions: the standard deviation of
+    # lower - share x other, over the square root of the repetitions, divided by the mean of other.
+    se_lower = (float(np.std(lower - share_lower * other, ddof=1)) / np.sqrt(len(splits)) / float(other.mean())
+                if other_picked and len(splits) > 1 else np.nan)
     return {"repetitions": int(len(splits)), "splits": int(n.iloc[0]),
             "share_planted_picked_mean": float(share_planted.mean()),
             "share_planted_picked_median": float(share_planted.median()),
             "share_other_picked_mean": float(1 - share_planted.mean()),
-            "share_lower_when_other_picked": float(splits["other_picked_lower"].sum() / other_picked) if other_picked else None,
+            "share_lower_when_other_picked": float(share_lower) if other_picked else None,
+            "share_lower_when_other_picked_se": float(se_lower) if other_picked else None,
+            "share_lower_bound_without_effect": (C.G3_TRIALS // 2) / (C.G3_TRIALS - 1),
             "pbo_from_other_picked": float((splits["other_picked_lower"] / n).mean()),
             "pbo_from_planted_picked": float((splits["planted_picked_lower"] / n).mean()),
             "mean_pbo": float(((splits["other_picked_lower"] + splits["planted_picked_lower"]) / n).mean())}

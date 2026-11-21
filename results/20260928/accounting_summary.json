@@ -1,0 +1,28 @@
+{
+ "written_by": "notebooks/04_accounting_characteristics.ipynb",
+ "manifest_sha256": "23e96d189f4b095936f47a1ebacb4e987fb260726afab4b6e6400c25ebce8693",
+ "member_months": 204520,
+ "link_rows": 123388,
+ "annual_records": {
+  "rows": 534577,
+  "rows_without_gvkey_or_date": 0,
+  "duplicate_company_dates": 0,
+  "records": 534577,
+  "book_equity_not_positive_or_missing": 145141,
+  "market_value_missing": 92958,
+  "records_without_fiscal_year": 0
+ },
+ "member_months_with_more_than_one_valid_link": 0,
+ "age_of_the_record_used": {
+  "6 to 11": 0.5,
+  "12 to 17": 0.4995,
+  "18 to 24": 0.0004
+ },
+ "present": {
+  "book_to_market": 198766,
+  "earnings_to_price": 203079,
+  "operating_profitability": 199609,
+  "asset_growth": 203693
+ },
+ "date_values_not_parsed": {}
+}

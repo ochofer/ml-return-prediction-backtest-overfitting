@@ -1,7 +1,7 @@
 # Licensed data never enter the repository. The extraction is read in place from the folder named by MLRP_DATA_ROOT.
 *.parquet
 data/
-# The run's forecasts per member, kept between runs so that the run can resume, never committed
+# Tables with one row per member, kept between notebooks and between runs on the machine that holds the extraction, never committed
 local/
 # Working notebooks kept on the machine that holds the data
 practice/

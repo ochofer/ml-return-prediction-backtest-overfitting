@@ -13,7 +13,8 @@ this file, and it cannot show the date. The seed, the names of the random
 streams, the data root's variable and the size checks' power were set on
 19 November 2026. The commit the copied code is taken from, the copies' SHA-256,
 the digest of the manifest's entries for the eight tables, the results folder
-and French's folder were set on 20 November 2026. A value that is still to be set is None here, with the
+and French's folder were set on 20 November 2026, and the folder of the frames
+kept between notebooks on 21 November 2026. A value that is still to be set is None here, with the
 milestone that sets it, and it is set in a commit of its own before any run
 that reads it. A level is never moved after a run that judges it.
 
@@ -68,9 +69,11 @@ MANIFEST_ROWS = 112_161_796      # rows the manifest lists
 # Set on 20 November 2026.
 MANIFEST_ENTRIES_SHA256 = "9e0202735911afd462e0ef6f7a9bf5f3937dc3be94faa863d457abae76b09237"
 MANIFEST_ENTRIES = 95            # files of the eight tables: 37 yearly files of the daily file, 52 of the fundamentals, one each for the other six
+MANIFEST_ENTRIES_ROWS = 73_595_093   # rows of those 95 files, the sum of the manifest's counts for them, read on 21 November 2026
 
 RESULTS_DIR = "results/20260928"   # the folder of the panel's committed aggregates, named by the extraction date. Set on 20 November 2026
 FRENCH_CACHE_DIR = "data/french"   # French's files as downloaded, never committed: data/ is ignored by git. Set on 20 November 2026
+LOCAL_DIR = "local"                # frames with one row per security kept between notebooks on the machine that holds the extraction, never committed: local/ is ignored by git. Set on 21 November 2026
 CRSP_END = "2024-12-31"          # the last date of the CRSP library on this subscription, where the sample ends
 DAILY_FILE_START = "1990-01-02"  # the first date of the daily stock file in the extraction
 

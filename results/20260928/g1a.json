@@ -1,0 +1,32 @@
+{
+ "member_months": {
+  "member_months": 440724,
+  "first_month": "1926-01",
+  "last_month": "2024-12",
+  "months": 1188,
+  "reference": {
+   "member_months": 440724,
+   "first_month": "1926-01",
+   "last_month": "2024-12",
+   "months": 1188
+  },
+  "equal": true
+ },
+ "count_check_by_year": {
+  "table": "universe_count_check_by_year.csv",
+  "rows": 99,
+  "sha256": "5bcde0897a9409ad",
+  "reference_sha256": "5bcde0897a9409ad",
+  "equal": true,
+  "reference_read_from": "https://raw.githubusercontent.com/ochofer/stock-level-tracking/0dabbb016492707b2f2e14884bceae89f088e1d6/results/20260928/universe_count_check_by_year.csv"
+ },
+ "delistings_by_year": {
+  "table": "delistings_by_year.csv",
+  "rows": 99,
+  "sha256": "985508804fee47dd",
+  "reference_sha256": "985508804fee47dd",
+  "equal": true,
+  "reference_read_from": "https://raw.githubusercontent.com/ochofer/stock-level-tracking/0dabbb016492707b2f2e14884bceae89f088e1d6/results/20260928/delistings_by_year.csv"
+ },
+ "g1a_met": true
+}

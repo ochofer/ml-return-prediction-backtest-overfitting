@@ -1,0 +1,78 @@
+{
+ "months": 408,
+ "by_characteristic": {
+  "size": {
+   "level": 0.9,
+   "lowest_share": 0.99604,
+   "lowest_month": "2018-12",
+   "months_below_level": 0
+  },
+  "book_to_market": {
+   "level": 0.8,
+   "lowest_share": 0.924453,
+   "lowest_month": "2024-05",
+   "months_below_level": 0
+  },
+  "earnings_to_price": {
+   "level": 0.9,
+   "lowest_share": 0.982,
+   "lowest_month": "2007-02",
+   "months_below_level": 0
+  },
+  "operating_profitability": {
+   "level": 0.8,
+   "lowest_share": 0.930417,
+   "lowest_month": "2023-07",
+   "months_below_level": 0
+  },
+  "asset_growth": {
+   "level": 0.9,
+   "lowest_share": 0.988,
+   "lowest_month": "1994-05",
+   "months_below_level": 0
+  },
+  "momentum": {
+   "level": 0.9,
+   "lowest_share": 0.984,
+   "lowest_month": "2001-01",
+   "months_below_level": 0
+  },
+  "reversal": {
+   "level": 0.9,
+   "lowest_share": 0.992032,
+   "lowest_month": "2015-08",
+   "months_below_level": 0
+  },
+  "volatility": {
+   "level": 0.9,
+   "lowest_share": 0.996,
+   "lowest_month": "1996-01",
+   "months_below_level": 0
+  },
+  "max_daily_return": {
+   "level": 0.9,
+   "lowest_share": 0.996,
+   "lowest_month": "1996-01",
+   "months_below_level": 0
+  },
+  "beta": {
+   "level": 0.9,
+   "lowest_share": 0.988142,
+   "lowest_month": "2015-12",
+   "months_below_level": 0
+  },
+  "idiosyncratic_volatility": {
+   "level": 0.9,
+   "lowest_share": 0.988142,
+   "lowest_month": "2015-12",
+   "months_below_level": 0
+  },
+  "dollar_volume": {
+   "level": 0.9,
+   "lowest_share": 0.99604,
+   "lowest_month": "2018-12",
+   "months_below_level": 0
+  }
+ },
+ "g1b_met": true
+}

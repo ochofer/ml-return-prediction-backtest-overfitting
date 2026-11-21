@@ -1,0 +1,27 @@
+{
+ "written_by": "notebooks/05_panel.ipynb",
+ "manifest_sha256": "23e96d189f4b095936f47a1ebacb4e987fb260726afab4b6e6400c25ebce8693",
+ "member_months": 204520,
+ "without_target": 100,
+ "months": 408,
+ "test_member_months": 114521,
+ "filled_cells": {
+  "size": 10,
+  "book_to_market": 5754,
+  "earnings_to_price": 1441,
+  "operating_profitability": 4911,
+  "asset_growth": 827,
+  "momentum": 1345,
+  "reversal": 113,
+  "volatility": 38,
+  "max_daily_return": 38,
+  "beta": 575,
+  "idiosyncratic_volatility": 575,
+  "dollar_volume": 10
+ },
+ "transform_checks": {
+  "within -1 and 1": true,
+  "filled cells equal the missing values": true,
+  "each month averages 0": true
+ }
+}

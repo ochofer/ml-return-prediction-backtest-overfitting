@@ -128,6 +128,12 @@ def test_the_splits_of_clause_d_add_up_to_its_probability():
     assert math.isclose(out["pbo_from_other_picked"] + out["pbo_from_planted_picked"], d["pbo"].mean())
     assert math.isclose(out["mean_pbo"], d["pbo"].mean())
     assert math.isclose(out["share_planted_picked_mean"] + out["share_other_picked_mean"], 1)
+    assert out["share_lower_bound_without_effect"] == 16 / 31
+    other = splits["splits"] - splits["planted_picked"]
+    ratio = splits["other_picked_lower"].sum() / other.sum()
+    by_hand = np.std(splits["other_picked_lower"] - ratio * other, ddof=1) / math.sqrt(FEW) / other.mean()
+    assert math.isclose(out["share_lower_when_other_picked"], ratio)
+    assert math.isclose(out["share_lower_when_other_picked_se"], by_hand)
 
 
 def test_the_figures_beside_are_written_to_a_file_of_their_own(tmp_path):

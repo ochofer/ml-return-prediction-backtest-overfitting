@@ -35,6 +35,8 @@
   "share_planted_picked_median": 0.885281385281,
   "share_other_picked_mean": 0.181664502165,
   "share_lower_when_other_picked": 0.54312573723,
+  "share_lower_when_other_picked_se": 0.0110198046666,
+  "share_lower_bound_without_effect": 0.516129032258,
   "pbo_from_other_picked": 0.0986666666667,
   "pbo_from_planted_picked": 0.000993506493506,
   "mean_pbo": 0.0996601731602
