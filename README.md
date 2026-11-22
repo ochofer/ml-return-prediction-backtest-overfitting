@@ -2,7 +2,7 @@
 
 This study is in build. It has reached the first of its five milestones, the panel. The repository holds its settings and their tests, the notebooks that build the panel with the aggregates they write, the overfitting statistics with their known-answer simulation on made-up returns, and the code copied from two other studies, which reads the data and computes the intervals for the difference of two Sharpe ratios.
 
-The study measures two things on the S&P 500's point-in-time members from January 1991 to December 2024. First, how much machine-learning models add to linear models in forecasting each member's return in the next month, out of sample. Second, how much of the best backtest's Sharpe ratio is left after a correction for the number of trials. It follows the method of Gu, Kelly and Xiu (2020), reduced to twelve characteristics and the index's members, and measures the overfitting with the deflated Sharpe ratio of Bailey and López de Prado (2014) and the probability of backtest overfitting of Bailey, Borwein, López de Prado and Zhu (2017).
+The study measures two things on the S&P 500's point-in-time members from January 1991 to December 2024. First, how much machine-learning models add to linear models in forecasting each member's return in the next month, out of sample. Second, how much of the best result is real once corrected for overfitting, that is, for having tried many versions and kept the best one. It follows the method of Gu, Kelly and Xiu (2020), reduced to twelve characteristics and the index's members, and measures the overfitting with the deflated Sharpe ratio of Bailey and López de Prado (2014) and the probability of backtest overfitting of Bailey, Borwein, López de Prado and Zhu (2017).
 
 ## Milestone 1, the panel
 
