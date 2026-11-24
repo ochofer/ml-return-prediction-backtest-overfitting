@@ -24,5 +24,43 @@
   "operating_profitability": 199609,
   "asset_growth": 203693
  },
- "date_values_not_parsed": {}
+ "date_values_not_parsed": {},
+ "member_months_without_a_company": {
+  "member_months": 450,
+  "members": 5,
+  "member_months_by_member": [
+   408,
+   39,
+   1,
+   1,
+   1
+  ],
+  "years_by_member": [
+   [
+    1991,
+    2024
+   ],
+   [
+    2021,
+    2024
+   ],
+   [
+    1996,
+    1996
+   ],
+   [
+    2010,
+    2010
+   ],
+   [
+    2018,
+    2018
+   ]
+  ],
+  "member_months_reached_by_another_link_type": 447,
+  "member_months_reached_by_link_type": {
+   "LS": 447,
+   "LX": 39
+  }
+ }
 }

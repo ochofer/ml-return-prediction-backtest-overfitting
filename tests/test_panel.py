@@ -148,3 +148,19 @@ def test_the_figures_the_panel_notebooks_quote_before_their_run():
         missing = [f for f in figures if f not in text]
         assert not missing, f"{name} does not quote {missing}"
     assert C.MANIFEST_SHA256.startswith("23e96d18") and C.TABLE_COUNT == len(C.TABLES) == 8
+
+
+def test_the_counts_notebook_04_quotes_on_the_member_months_without_a_company():
+    # Notebook 04 quotes these in what was learned, from the summary its run wrote.
+    words = {3: "three", 5: "five"}
+    out = json.loads((ROOT / C.RESULTS_DIR / "accounting_summary.json").read_text())["member_months_without_a_company"]
+    by, years, types = out["member_months_by_member"], out["years_by_member"], out["member_months_reached_by_link_type"]
+    singles = sum(1 for n in by if n == 1)
+    assert by[0] == C.PANEL_MONTHS and len(by) == out["members"] and sum(by) == out["member_months"]
+    assert out["member_months"] - out["member_months_reached_by_another_link_type"] == singles
+    quoted = [f"The {out['member_months']:,} member-months without a company are {words[out['members']]} members",
+              f"one in all {by[0]} months, one in {by[1]} months from {years[1][0]} and {words[singles]} in one month each",
+              f"reach {out['member_months_reached_by_another_link_type']:,} of them, LS all {types['LS']:,} and LX {types['LX']:,} of those"]
+    text = markdown("04_accounting_characteristics.ipynb")
+    missing = [q for q in quoted if q not in text]
+    assert not missing, f"notebook 04 does not quote {missing}"

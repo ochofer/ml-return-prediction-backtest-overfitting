@@ -37,6 +37,21 @@ Sources cited by short name below:
     Evidence from Stock Return Predictability", Management Science 69(5), 2587-2619.
   Ledoit and Wolf (2008), "Robust performance hypothesis testing with the Sharpe
     ratio", Journal of Empirical Finance 15(5), 850-859.
+  The sources the notebooks name, as Crossref gives them, added on 24 November 2026:
+  Shumway (1997), "The Delisting Bias in CRSP Data", The Journal of Finance
+    52(1), 327-340.
+  Fama and French (1992), "The Cross-Section of Expected Stock Returns",
+    The Journal of Finance 47(2), 427-465.
+  Fama and French (2015), "A five-factor asset pricing model", Journal of
+    Financial Economics 116(1), 1-22.
+  Basu (1983), "The relationship between earnings' yield, market value and
+    return for NYSE common stocks", Journal of Financial Economics 12(1), 129-156.
+  Cooper, Gulen and Schill (2008), "Asset Growth and the Cross-Section of Stock
+    Returns", The Journal of Finance 63(4), 1609-1651.
+  Ang, Hodrick, Xing and Zhang (2006), "The Cross-Section of Volatility and
+    Expected Returns", The Journal of Finance 61(1), 259-299.
+  Anderson and Dyl (2007), "Trading Volume: NASDAQ and the NYSE", Financial
+    Analysts Journal 63(3), 79-86.
   Stock-Level Tracking: github.com/ochofer/stock-level-tracking, whose data layer
     this study copies (section 2).
   Signal Evaluation: github.com/ochofer/volatility-managed-portfolios, whose
@@ -148,7 +163,7 @@ PANEL_FIRST_MONTH = "1991-01"
 PANEL_LAST_MONTH = "2024-12"
 PANEL_MONTHS = 408
 PANEL_MEMBER_MONTHS = 204_520            # member-months in the universe over the panel's months
-PANEL_MEMBER_MONTHS_NO_RETURN = 100      # with no return and no delisting return: left out of the panel, counted
+PANEL_MEMBER_MONTHS_NO_RETURN = 100      # with no return and no delisting return: kept in the panel without a target, and left out of every fit
 TEST_FIRST_MONTH = "2006-01"
 TEST_LAST_MONTH = "2024-12"
 TEST_MONTHS = 228
@@ -204,6 +219,11 @@ BETA_MIN_DAYS = 120              # with at least 120 daily returns among them
 # the link valid on the last trading day of month t-1.
 ACCOUNTING_MIN_AGE_MONTHS = 6
 ACCOUNTING_MAX_AGE_MONTHS = 24
+# The link types through which a member reaches its company: those of the copied
+# sector join, which the tests check against the copied constants. Notebook 04
+# counts the member-months a link of any other type would reach. Set on
+# 24 November 2026.
+ACCOUNTING_LINK_TYPES = ("LC", "LU")
 
 # The Compustat items each accounting characteristic reads, in the order of use.
 # Book equity: stockholders' equity (`seq`, else `ceq` plus `pstk`, else `at`
@@ -402,11 +422,11 @@ SIZE_CHECK_SETTINGS = None       # set in milestone 2
 
 # Over the test window, OLS-3's out-of-sample R² lies between -0.5 and
 # +1.5 per cent a month, and it differs from the pooled-mean forecast's by at
-# most 0.5 percentage points. Gu, Kelly and Xiu (2020) report 0.31 per cent a
-# month for OLS-3 on the 1,000 largest stocks, and three slopes on ranks cannot
-# move the R² far from the constant's. A return leaked into a
-# characteristic gives an R² above that range. On a failure the panel is
-# counted again against gate G1's tables.
+# most 0.5 percentage points. Gu, Kelly and Xiu (2020, Table 1) report 0.31 per
+# cent a month for OLS-3 with Huber's loss, fitted on all their stocks and scored
+# on the 1,000 largest. Three slopes on ranks cannot move the R² far from the
+# constant's. A return leaked into a characteristic gives an R² above that
+# range. On a failure the panel is counted again against gate G1's tables.
 G2_OLS3_R2_RANGE = (-0.5, 1.5)               # per cent a month
 G2_OLS3_MINUS_POOLED_MEAN_MAX = 0.5          # percentage points, in absolute value
 
@@ -480,6 +500,18 @@ G3_D_ANNUAL_SHARPE = 1.0             # the planted trial's true Sharpe ratio a y
 G3_D_BEST_SHARE_MIN = 0.90
 G3_D_PBO_MAX = 0.25
 
+# Beside the four clauses, and read by no level: three sets of figures added on
+# 24 November 2026, after the simulation's results were known.
+# - The deflated Sharpe ratio of the best trial on clause (d)'s own repetitions.
+# - The detectable effects: one trial with each of these true Sharpe ratios a
+#   year and 31 trials without one, at the study's months, trials and blocks,
+#   with G3_DETECTABLE_REPETITIONS repetitions for each.
+# - The bound beside clause (d): its share over G3_BOUND_REPETITIONS further
+#   repetitions of clause (d)'s setting.
+G3_DETECTABLE_ANNUAL_SHARPES = (0.0, 0.25, 0.5, 0.75, 1.0, 1.5)
+G3_DETECTABLE_REPETITIONS = 1000
+G3_BOUND_REPETITIONS = 20_000
+
 # ---------------------------------------------------------------------------
 # 13. The expectations, over the test window
 # ---------------------------------------------------------------------------
@@ -516,7 +548,14 @@ E6_MODELS = ("ols12", "elastic_net", "random_forest", "boosted_trees", "network"
 # E7: each non-linear model's long-short turnover is above OLS-3's.
 E7_MODELS = E2_NONLINEAR_MODELS
 # E8: the best trial's deflated Sharpe ratio is below DSR_LEVEL.
+#     How often E8 is met with one trial of a given true Sharpe ratio a year, on
+#     made-up returns: results/simulation/g3_detectable_effects.csv (notebook 12,
+#     step 6). Its verdict carries that table's figures at 0.5 a year. The
+#     pointer was added on 24 November 2026.
 # E9: the probability of backtest overfitting is at least 0.25.
+#     How often E9 is met with one trial of a given true Sharpe ratio a year, on
+#     made-up returns: the same table. Its verdict carries that table's figures
+#     at 0.5 a year. The pointer was added on 24 November 2026.
 E9_PBO_MIN = 0.25
 # E10: for the elastic net and the boosted trees, choosing the configuration by
 #      purged and embargoed cross-validation changes the R² by less than
@@ -546,3 +585,14 @@ SEED_STREAMS = {
 # so that each clause's draws are the same whatever the number of repetitions of
 # the others. Set with the simulation's code on 19 November 2026.
 KNOWN_ANSWER_SUB_STREAMS = {"a_b": 0, "c": 1, "d": 2}
+
+# The figures beside gate G3 that need draws of their own take them from
+# sub-streams of the same stream, numbered after the clauses':
+# numpy.random.default_rng([SEED, SEED_STREAMS["known_answer"],
+#                           BESIDE_G3_SUB_STREAMS[name], *position]),
+# where the detectable effects add the position of the row's true Sharpe ratio
+# in G3_DETECTABLE_ANNUAL_SHARPES, so that each row's draws are the same whatever
+# the other rows. The deflated Sharpe ratio beside clause (d) is computed on
+# clause (d)'s own draws, sub-stream 2, and takes none of its own. Set on
+# 24 November 2026.
+BESIDE_G3_SUB_STREAMS = {"detectable_effects": 3, "bound": 4}

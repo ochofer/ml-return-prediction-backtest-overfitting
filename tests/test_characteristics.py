@@ -132,3 +132,26 @@ def test_a_record_older_than_the_maximum_age_is_not_used(w):
     # December 1989 is 24 months before December 1991, the month before January 1992, and 25 before February.
     assert row_of(out, "1992-01", 10006)["age_months"] == 24
     assert np.isnan(row_of(out, "1992-02", 10006)["book_to_market"])
+
+
+def test_the_member_months_without_a_company_and_the_links_of_other_types(w):
+    links = w["links"].copy()
+    # 10003 loses its LC link and gains an LS link valid from March 1991; 10004's link ends in June 1992.
+    links.loc[links["lpermno"] == 10003, "linktype"] = "LS"
+    links.loc[links["lpermno"] == 10003, "linkdt"] = pd.Timestamp("1991-03-01")
+    links.loc[links["lpermno"] == 10004, "linkenddt"] = pd.Timestamp("1992-06-15")
+    out = K.without_a_company(w["ulong"], links)
+    accounting, _, _ = K.accounting_characteristics(w["ulong"], links, w["funda"])
+    assert out["member_months"] == int(accounting["gvkey"].isna().sum()) == 24 + 6
+    assert out["members"] == 2
+    assert out["member_months_by_member"] == [24, 6] and out["years_by_member"] == [[1991, 1992], [1992, 1992]]
+    # The LS link is valid on the last trading day of the month before from April 1991: 21 of 10003's 24 months.
+    assert out["member_months_reached_by_another_link_type"] == 21
+    assert out["member_months_reached_by_link_type"] == {"LS": 21}
+    assert set(out) == {"member_months", "members", "member_months_by_member", "years_by_member",
+                        "member_months_reached_by_another_link_type", "member_months_reached_by_link_type"}
+
+
+def test_the_link_types_of_the_accounting_characteristics_are_the_copied_sector_join_s():
+    from mlrp.source import constants as SC
+    assert C.ACCOUNTING_LINK_TYPES == SC.LINK_TYPES

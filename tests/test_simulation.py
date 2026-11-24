@@ -1,6 +1,7 @@
 """The known-answer simulation draws what it says, from the seed alone, with one stream per clause, and
 its verdicts read the levels of the constants, and the figures beside clauses (a) and (d) are computed as
-their docstrings say. These tests use six repetitions and judge nothing."""
+their docstrings say. These tests use six repetitions and judge nothing, except the last, which reads the
+files of notebook 12's run and checks the figures its text quotes."""
 import json
 import math
 import pathlib
@@ -144,3 +145,80 @@ def test_the_figures_beside_are_written_to_a_file_of_their_own(tmp_path):
     saved = json.load(open(path, encoding="utf-8"))
     assert saved["settings"] == json.loads(json.dumps(S.settings()))
     assert math.isclose(saved["beside_clause_d"]["mean_pbo"], d["mean_pbo"], rel_tol=1e-11)
+    assert set(saved) == {"written_by", "settings", "beside_clause_a", "beside_clause_d"}
+    dd = S.beside_clause_d_deflated(S.clause_d_deflated(FEW))
+    bound = S.bound_share(FEW)
+    S.write_figures_beside(a, d, written_by="test", directory=tmp_path, d_deflated=dd, bound=bound)
+    saved = json.load(open(path, encoding="utf-8"))
+    assert saved["settings_added_on_24_november_2026"] == json.loads(json.dumps(S.settings_beside()))
+    assert math.isclose(saved["deflated_sharpe_ratio_on_clause_d"]["median"], dd["median"], rel_tol=1e-11)
+    assert math.isclose(saved["bound_further_repetitions"]["standard_error"], bound["standard_error"], rel_tol=1e-11)
+    table = S.detectable_effects((0.0, 1.0), FEW)
+    written = S.write_detectable_effects(table, directory=tmp_path)
+    assert written == tmp_path / "g3_detectable_effects.csv" and len(written.read_text().splitlines()) == 3
+
+
+# The three sets of figures beside the clauses added on 24 November 2026.
+
+def test_the_beside_sub_streams_are_set_in_the_constants_and_differ_from_the_clauses():
+    assert not set(C.BESIDE_G3_SUB_STREAMS.values()) & set(C.KNOWN_ANSWER_SUB_STREAMS.values())
+    for name, sub in C.BESIDE_G3_SUB_STREAMS.items():
+        direct = np.random.default_rng([C.SEED, C.SEED_STREAMS["known_answer"], sub, 2]).standard_normal(5)
+        assert np.array_equal(S.rng_beside(name, 2).standard_normal(5), direct)
+
+
+def test_the_deflated_sharpe_ratio_on_clause_d_uses_clause_d_draws():
+    dd, d = S.clause_d_deflated(FEW), S.clause_d(FEW)
+    assert dd["planted_is_best"].equals(d["planted_is_best"])
+    assert dd["deflated_sharpe_ratio"].between(0, 1).all()
+    out = S.beside_clause_d_deflated(dd)
+    assert out["share_above_level"] == (dd["deflated_sharpe_ratio"] > C.DSR_LEVEL).mean()
+    assert out["median"] == dd["deflated_sharpe_ratio"].median() and out["mean_threshold"] == dd["threshold"].mean()
+    assert out["threshold_without_effect"] == O.expected_max_sharpe(C.G3_TRIALS, 1 / (C.G3_MONTHS - 1))
+
+
+def test_the_detectable_effects_draw_each_row_from_its_own_position():
+    both = S.detectable_effects((0.0, 1.0), FEW)
+    alone = S.detectable_effects((0.0,), FEW)
+    assert list(both["annual_sharpe"]) == [0.0, 1.0] and (both["repetitions"] == FEW).all()
+    assert both.iloc[[0]].reset_index(drop=True).equals(alone)
+    for column in ("share_planted_best", "share_dsr_above_0.95", "median_dsr", "mean_pbo", "share_pbo_below_0.25"):
+        assert both[column].between(0, 1).all()
+    assert np.allclose(both["share_e8_met"] + both["share_dsr_above_0.95"], 1)
+    assert np.allclose(both["share_e9_met"] + both["share_pbo_below_0.25"], 1)
+    assert both["monthly_sharpe"].iloc[1] == S.planted_monthly_sharpe()
+
+
+def test_the_bound_share_draws_further_repetitions_of_clause_d():
+    out = S.bound_share(FEW)
+    assert out["repetitions"] == FEW and out["bound"] == 16 / 31
+    again = S.beside_clause_d(S.clause_d_splits(FEW, rng=S.rng_beside("bound")))
+    assert out["share_lower_when_other_picked"] == again["share_lower_when_other_picked"]
+    assert not S.clause_d_splits(FEW, rng=S.rng_beside("bound")).equals(S.clause_d_splits(FEW))
+    assert math.isclose(out["distance_from_bound_in_standard_errors"],
+                        (out["share_lower_when_other_picked"] - out["bound"]) / out["standard_error"])
+
+
+def test_the_figures_notebook_12_quotes_from_its_run():
+    # Notebook 12 quotes these in steps 6 and in what was learned, from the files its run wrote.
+    import pandas as pd
+    folder = ROOT / "results" / "simulation"
+    summary = json.loads((folder / "g3_summary.json").read_text(encoding="utf-8"))["clauses"]
+    beside = json.loads((folder / "g3_figures_beside.json").read_text(encoding="utf-8"))
+    effects = pd.read_csv(folder / "g3_detectable_effects.csv").set_index("annual_sharpe")
+    nb = json.loads((ROOT / "notebooks" / "12_known_answer.ipynb").read_text(encoding="utf-8"))
+    text = "\n".join("".join(c["source"]) for c in nb["cells"] if c["cell_type"] == "markdown")
+    dd, bound, d = beside["deflated_sharpe_ratio_on_clause_d"], beside["bound_further_repetitions"], beside["beside_clause_d"]
+    quoted = [
+        f"falls from {summary['c']['mean_pbo']:.3f} to {summary['d']['mean_pbo']:.3f}",
+        f"above 0.95 in {dd['share_above_level']:.3f} of them, with a median of {dd['median']:.3f}",
+        f"from {dd['threshold_without_effect']:.4f} to {dd['mean_threshold']:.4f} a month on average",
+        f"the share is {d['share_lower_when_other_picked']:.3f}, "
+        f"{(d['share_lower_when_other_picked'] - d['share_lower_bound_without_effect']) / d['share_lower_when_other_picked_se']:.1f} standard errors above the bound",
+        f"Over {bound['repetitions']:,} further repetitions it is {bound['share_lower_when_other_picked']:.3f}, "
+        f"with a standard error of {bound['standard_error']:.4f}",
+        f"E8 would be met in {effects.loc[0.5, 'share_e8_met']:.3f} and E9 in {effects.loc[0.5, 'share_e9_met']:.3f} of the repetitions",
+    ]
+    missing = [q for q in quoted if q not in text]
+    assert not missing, f"notebook 12 does not quote {missing}"
+    assert bound["repetitions"] >= 20_000 and list(effects.index) == list(C.G3_DETECTABLE_ANNUAL_SHARPES)

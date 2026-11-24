@@ -2,17 +2,17 @@
 
 This study is in build. It has reached the first of its five milestones, the panel. The repository holds its settings and their tests, the notebooks that build the panel with the aggregates they write, the overfitting statistics with their known-answer simulation on made-up returns, and the code copied from two other studies, which reads the data and computes the intervals for the difference of two Sharpe ratios.
 
-The study measures two things on the S&P 500's point-in-time members from January 1991 to December 2024. First, how much machine-learning models add to linear models in forecasting each member's return in the next month, out of sample. Second, how much of the best result is real once corrected for overfitting, that is, for having tried many versions and kept the best one. It follows the method of Gu, Kelly and Xiu (2020), reduced to twelve characteristics and the index's members, and measures the overfitting with the deflated Sharpe ratio of Bailey and López de Prado (2014) and the probability of backtest overfitting of Bailey, Borwein, López de Prado and Zhu (2017).
+The study measures two things on the S&P 500's point-in-time members from January 1991 to December 2024. First, how much machine-learning models add to linear models in forecasting each member's return in the next month, out of sample. Second, how much of the best result is real once corrected for overfitting, that is, for having tried many versions and kept the best one. It follows the method of Gu, Kelly and Xiu (2020), reduced to twelve characteristics and the index's members, with the squared-error loss and a validation sample of five years, and measures the overfitting with the deflated Sharpe ratio of Bailey and López de Prado (2014) and the probability of backtest overfitting of Bailey, Borwein, López de Prado and Zhu (2017).
 
 ## Milestone 1, the panel
 
-Reached on 21 November 2026. Gate G1 is met in its three parts:
+Gate G1 is met in its three parts:
 
 - (a) The copied data layer gives Stock-Level Tracking's 440,724 member-months from January 1926 to December 2024, and its count check by year and its delisting counts by year to the last byte, read from that study's commit 0dabbb0 (`g1a.json`).
 - (b) Each of the twelve characteristics is present for at least its level of each month's members in all 408 months from January 1991 to December 2024. The lowest months are book-to-market at 0.924 (May 2024) and operating profitability at 0.930 (July 2023), against a level of 0.80, and the other ten stay at or above 0.982, against 0.90 (`g1b_coverage.json`).
 - (c) The 24 months drawn by the study's seed, built a second time from data cut at the last trading day of the month before, equal the full build in all 144,312 cells, with a largest difference of 0 (`g1c_lookahead.csv`).
 
-The panel holds 204,520 member-months, 100 of them without a target, and 114,521 in the test window (`panel_summary.json`). Before the run, notebooks 03 and 04 wrote down ten figures they expected, with no verdict. As the tables in `results/20260928/` give them:
+The panel holds 204,520 member-months, 100 of them without a target, and 114,521 in the test window (`panel_summary.json`). Before the run, ten figures were written into notebooks 03 and 04 as expected, with no verdict. Seven are forecasts, and three, the count of member-months without size, the coverage of the four daily characteristics and the share with a GVKEY (Compustat's permanent number for a company), are read from Stock-Level Tracking's tables on the same extraction. As the tables in `results/20260928/` give them:
 
 - Size is missing in 10 of the 204,520 member-months, where 10 was expected (`market_summary.json`).
 - Volatility, the largest daily return, beta and idiosyncratic volatility are present for at least 0.994 of member-months in every year, the lowest in 2006, where above 0.98 was expected (`market_coverage_by_year.csv`).
@@ -20,16 +20,18 @@ The panel holds 204,520 member-months, 100 of them without a target, and 114,521
 - The mean beta by year runs from 0.733 in 2000 to 1.160 in 2009, where 0.7 to 1.3 was expected (`market_summary.json`).
 - The median volatility across members is highest in 2000 (0.0272), then 2009 (0.0267) and 2008 (0.0255), where 2008 or 2009 was expected (`market_medians_by_year.csv`).
 - A company in Compustat is found for at least 0.996 of member-months in every year, the lowest in 2023, where at least 0.996 was expected (`accounting_coverage_by_year.csv`).
-- An annual record of the right age is found for at least 0.996 of member-months in every year, where above 0.97 of those with a company was expected (`accounting_coverage_by_year.csv`).
+- An annual record of the right age is found for at least 0.998 of the member-months with a company in every year, where above 0.97 was expected (`accounting_coverage_by_year.csv`).
 - A record without book-to-market covers at most 0.069 of member-months in a year, in 2024, where below 0.10 was expected (`accounting_coverage_by_year.csv`).
 - Book-to-market and operating profitability are present for at least 0.927 and 0.933 of member-months in every year, and earnings-to-price and asset growth for at least 0.986 and 0.992, where above 0.85 and above 0.95 were expected (`accounting_coverage_by_year.csv`).
 - The annual record used is 6 to 11 months old in 0.5000 of member-months and 12 to 17 months old in 0.4995, where about half each was expected (`accounting_summary.json`).
+
+Gate G3, the check of the two overfitting statistics on made-up returns with known answers, is met in its four clauses (`results/simulation/g3_summary.json`).
 
 ## Data
 
 CRSP and Compustat, via Wharton Research Data Services, accessed through Queen Mary University of London, in an extraction of 28 September 2026, and Kenneth French's data library. The repository holds no data: code, tests and aggregates only.
 
-The universe, the monthly returns and the reading of the extraction come from the data layer of [Stock-Level Tracking](https://github.com/ochofer/stock-level-tracking), whose seven modules are copied unchanged into `src/mlrp/source/` from its commit 0dabbb0. The interval for the difference of two Sharpe ratios comes from [Signal Evaluation](https://github.com/ochofer/volatility-managed-portfolios), whose `bootstrap.py` is copied unchanged from its commit 74ed6d1. The SHA-256 of each copy is in `src/mlrp/constants.py`, and the tests check every copy against it. `src/mlrp/data.py` calls the copies with this study's settings.
+The universe, the monthly returns and the reading of the extraction come from the data layer of [Stock-Level Tracking](https://github.com/ochofer/stock-level-tracking), whose seven modules are copied unchanged into `src/mlrp/source/` from its commit 0dabbb0. The interval for the difference of two Sharpe ratios comes from [Volatility-managed portfolios](https://github.com/ochofer/volatility-managed-portfolios), whose `bootstrap.py` is copied unchanged from its commit 74ed6d1. The SHA-256 of each copy is in `src/mlrp/constants.py`, and the tests check every copy against it. `src/mlrp/data.py` calls the copies with this study's settings.
 
 ## Notebooks
 
@@ -37,7 +39,7 @@ The notebooks in `notebooks/` are written by `build_notebooks.py` and committed 
 
 ## Settings
 
-`src/mlrp/constants.py` holds every gate, expectation, sample boundary and count of the study, each with its reason. The levels were set on 18 November 2026. That date rests on the file alone, since the history begins with the commit that holds it. A value still to be set is `None` in the file, with the milestone that sets it. The tests run with `python3 -m pytest tests`.
+`src/mlrp/constants.py` holds every gate, expectation, sample boundary and count of the study, each with its reason. The levels were set on 18 November 2026. A value still to be set is `None` in the file, with the milestone that sets it. The tests run with `python3 -m pytest tests`.
 
 ## Terms
 

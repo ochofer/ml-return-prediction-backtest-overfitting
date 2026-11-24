@@ -12,7 +12,8 @@ at that day and compare the two builds:
   Compustat's annual fundamentals through the CRSP-Compustat link.
 
 Every function takes the member-months as the copied universe gives them (month, permno, date_prev) and returns
-one row per member-month, with a characteristic missing where its rule says so. Nothing here reads or writes a
+one row per member-month, with a characteristic missing where its rule says so. without_a_company() counts the
+member-months that the links leave without a company, for notebook 04. Nothing here reads or writes a
 file: the notebooks read the extraction through src/mlrp/data.py and keep the result in local/, which git ignores.
 """
 from __future__ import annotations
@@ -253,3 +254,32 @@ def accounting_characteristics(ulong: pd.DataFrame, raw_links: pd.DataFrame, fun
         matched[["month", "permno", "age_months", *ACCOUNTING]], on=["month", "permno"], how="left")
     out = out.sort_values(["month", "permno"], ignore_index=True)
     return out[["month", "permno", "gvkey", "age_months", *ACCOUNTING]], multiple, counts
+
+
+def without_a_company(ulong: pd.DataFrame, raw_links: pd.DataFrame) -> dict:
+    """Counts of the member-months that the study's links leave without a company, and of those that a link of
+    another type would reach. The study's links are those of accounting_characteristics(). A link of another
+    type, any type outside constants.ACCOUNTING_LINK_TYPES and any primary flag, reaches a member-month when it
+    names the member's PERMNO and is valid on date_prev, both ends included. Counts and years only, with no
+    identifier: the member-months and the members, each member's member-months and its first and last year,
+    largest first, and the member-months reached, in all and by link type.
+
+    Added on 24 November 2026.
+    """
+    linked, _ = S.link_gvkeys(ulong[["month", "permno", "date_prev"]], S.sector_links(raw_links))
+    missing = linked.loc[linked["gvkey"].isna(), ["month", "permno", "date_prev"]].copy()
+    missing["year"] = pd.PeriodIndex(missing["month"], freq="M").year
+    by_member = (missing.groupby("permno")
+                 .agg(member_months=("month", "size"), first_year=("year", "min"), last_year=("year", "max"))
+                 .sort_values(["member_months", "first_year"], ascending=[False, True]))
+    other = raw_links[raw_links["lpermno"].notna() & ~raw_links["linktype"].isin(C.ACCOUNTING_LINK_TYPES)].copy()
+    other["permno"] = other["lpermno"].astype("int64")
+    other["linkenddt"] = other["linkenddt"].fillna(S.OPEN_END)
+    m = missing.merge(other[["permno", "linktype", "linkdt", "linkenddt"]], on="permno", how="inner")
+    m = m[(m["linkdt"] <= m["date_prev"]) & (m["date_prev"] <= m["linkenddt"])]
+    by_type = m.drop_duplicates(["permno", "month", "linktype"])["linktype"].value_counts().sort_index()
+    return {"member_months": int(len(missing)), "members": int(len(by_member)),
+            "member_months_by_member": [int(n) for n in by_member["member_months"]],
+            "years_by_member": [[int(a), int(b)] for a, b in zip(by_member["first_year"], by_member["last_year"])],
+            "member_months_reached_by_another_link_type": int(len(m.drop_duplicates(["permno", "month"]))),
+            "member_months_reached_by_link_type": {str(k): int(v) for k, v in by_type.items()}}

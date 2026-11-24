@@ -18,6 +18,13 @@ Beside the clauses, and read by no level, the module computes the exact expected
 ratio of trials with no effect, against which the formula of clause (a) is an approximation,
 and the splits of clause (d): how often the trial with the true effect is picked on one half
 of the months, and which splits make up the probability of backtest overfitting.
+
+Three sets of figures beside the clauses were added on 24 November 2026, after the
+simulation's results were known, and no level reads them: the deflated Sharpe ratio of the
+best trial on clause (d)'s own draws, the detectable effects (how both statistics respond to
+one trial with a true Sharpe ratio from 0 to 1.5 a year), and the share beside clause (d)'s
+bound over further repetitions. The last two draw from sub-streams of their own (constants
+section 14).
 """
 from __future__ import annotations
 
@@ -44,6 +51,12 @@ def rng_for(clause: str) -> np.random.Generator:
     return np.random.default_rng([C.SEED, C.SEED_STREAMS["known_answer"], C.KNOWN_ANSWER_SUB_STREAMS[clause]])
 
 
+def rng_beside(name: str, *position: int) -> np.random.Generator:
+    """The random generator of a set of figures beside the clauses: the study's seed, this simulation's
+    stream, the set's sub-stream and, for the detectable effects, the position of the row."""
+    return np.random.default_rng([C.SEED, C.SEED_STREAMS["known_answer"], C.BESIDE_G3_SUB_STREAMS[name], *position])
+
+
 def made_up_returns(rng: np.random.Generator, months: int, trials: int, planted_monthly_sharpe: float = 0.0) -> np.ndarray:
     """A months-by-trials matrix of independent standard normal returns. The first trial's
     mean is `planted_monthly_sharpe`, which is then its true monthly Sharpe ratio, since
@@ -53,9 +66,10 @@ def made_up_returns(rng: np.random.Generator, months: int, trials: int, planted_
     return r
 
 
-def planted_monthly_sharpe() -> float:
-    """The planted trial's true Sharpe ratio a month: 1.0 a year over the square root of 12."""
-    return C.G3_D_ANNUAL_SHARPE / math.sqrt(C.MONTHS_PER_YEAR)
+def planted_monthly_sharpe(annual: float = C.G3_D_ANNUAL_SHARPE) -> float:
+    """The planted trial's true Sharpe ratio a month: its Sharpe ratio a year, 1.0 in clause (d), over the
+    square root of 12."""
+    return annual / math.sqrt(C.MONTHS_PER_YEAR)
 
 
 def clauses_a_b(repetitions: int = C.G3_REPETITIONS_A_B, months: int = C.G3_MONTHS, trials: int = C.G3_TRIALS):
@@ -177,13 +191,14 @@ def beside_clause_a(ab: pd.DataFrame, months: int = C.G3_MONTHS, trials: int = C
 
 
 def clause_d_splits(repetitions: int = C.G3_REPETITIONS_C_D, months: int = C.G3_MONTHS,
-                    trials: int = C.G3_TRIALS, blocks: int = C.G3_BLOCKS) -> pd.DataFrame:
+                    trials: int = C.G3_TRIALS, blocks: int = C.G3_BLOCKS, rng: np.random.Generator = None) -> pd.DataFrame:
     """The draws of clause (d) again, split by split. Per repetition, counts out of the splits:
     the splits in which the planted trial is the in-sample best, the splits in which another
     trial is the in-sample best and ranks in the lower half out-of-sample, and the splits in
     which the planted trial is the in-sample best and ranks there. The last two together are
-    the splits that the probability of backtest overfitting counts."""
-    rng = rng_for("d")
+    the splits that the probability of backtest overfitting counts. With `rng` given, the
+    repetitions are new draws of clause (d)'s setting from that generator."""
+    rng = rng_for("d") if rng is None else rng
     planted = planted_monthly_sharpe()
     rows = []
     for i in range(repetitions):
@@ -228,6 +243,72 @@ def beside_clause_d(splits: pd.DataFrame) -> dict:
             "mean_pbo": float(((splits["other_picked_lower"] + splits["planted_picked_lower"]) / n).mean())}
 
 
+def clause_d_deflated(repetitions: int = C.G3_REPETITIONS_C_D, months: int = C.G3_MONTHS,
+                      trials: int = C.G3_TRIALS) -> pd.DataFrame:
+    """The draws of clause (d) again. Per repetition: whether the planted trial has the highest Sharpe
+    ratio, and the deflated Sharpe ratio of the trial that has it, with its threshold, the expected best
+    Sharpe ratio at the variance of the 32 trials' Sharpe ratios."""
+    rng = rng_for("d")
+    planted = planted_monthly_sharpe()
+    rows = []
+    for i in range(repetitions):
+        out = O.deflated_sharpe_ratio(made_up_returns(rng, months, trials, planted))
+        rows.append((i, out["best_trial"] == 0, out["deflated_sharpe_ratio"], out["threshold"]))
+    return pd.DataFrame(rows, columns=["repetition", "planted_is_best", "deflated_sharpe_ratio", "threshold"])
+
+
+def beside_clause_d_deflated(dd: pd.DataFrame, months: int = C.G3_MONTHS, trials: int = C.G3_TRIALS) -> dict:
+    """The deflated Sharpe ratio on clause (d)'s repetitions: the share above the level, its median and the
+    mean threshold, beside the threshold with no effect at the variance of 1 / (T - 1). No level reads it."""
+    return {"repetitions": int(len(dd)), "level": C.DSR_LEVEL,
+            "share_above_level": float((dd["deflated_sharpe_ratio"] > C.DSR_LEVEL).mean()),
+            "median": float(dd["deflated_sharpe_ratio"].median()),
+            "mean_threshold": float(dd["threshold"].mean()),
+            "threshold_without_effect": float(O.expected_max_sharpe(trials, 1 / (months - 1)))}
+
+
+def detectable_effects(annual_sharpes=C.G3_DETECTABLE_ANNUAL_SHARPES, repetitions: int = C.G3_DETECTABLE_REPETITIONS,
+                       months: int = C.G3_MONTHS, trials: int = C.G3_TRIALS, blocks: int = C.G3_BLOCKS) -> pd.DataFrame:
+    """One row per true Sharpe ratio a year of the first trial, with the other trials at zero. Each row's
+    repetitions come from its own position on the sub-stream of the detectable effects. Per row: the share
+    of repetitions in which the first trial has the highest Sharpe ratio, the share in which the best trial's
+    deflated Sharpe ratio is above the level and its median, the mean probability of backtest overfitting and
+    the share below 0.25, and the shares in which expectations E8 and E9 would be met. No level reads it."""
+    rows = []
+    for position, annual in enumerate(annual_sharpes):
+        rng = rng_beside("detectable_effects", position)
+        planted = planted_monthly_sharpe(annual)
+        best, dsr, pbo = [], [], []
+        for _ in range(repetitions):
+            r = made_up_returns(rng, months, trials, planted)
+            out = O.deflated_sharpe_ratio(r)
+            best.append(out["best_trial"] == 0)
+            dsr.append(out["deflated_sharpe_ratio"])
+            pbo.append(O.probability_of_backtest_overfitting(r, blocks)["pbo"])
+        best, dsr, pbo = np.array(best), np.array(dsr), np.array(pbo)
+        rows.append({"annual_sharpe": float(annual), "monthly_sharpe": planted, "repetitions": int(repetitions),
+                     "share_planted_best": float(best.mean()),
+                     "share_dsr_above_0.95": float((dsr > C.DSR_LEVEL).mean()),
+                     "median_dsr": float(np.median(dsr)),
+                     "mean_pbo": float(pbo.mean()),
+                     "share_pbo_below_0.25": float((pbo < C.E9_PBO_MIN).mean()),
+                     "share_e8_met": float((dsr < C.DSR_LEVEL).mean()),
+                     "share_e9_met": float((pbo >= C.E9_PBO_MIN).mean())})
+    return pd.DataFrame(rows)
+
+
+def bound_share(repetitions: int = C.G3_BOUND_REPETITIONS) -> dict:
+    """The share beside clause (d)'s bound over further repetitions of clause (d)'s setting, drawn from the
+    sub-stream of the bound: of the splits in which another trial is picked, the share that ends in the
+    lower half out-of-sample, with its standard error, the bound and the distance from it in standard
+    errors. No level reads it."""
+    out = beside_clause_d(clause_d_splits(repetitions, rng=rng_beside("bound")))
+    share, se, bound = out["share_lower_when_other_picked"], out["share_lower_when_other_picked_se"], out["share_lower_bound_without_effect"]
+    return {"repetitions": out["repetitions"], "share_lower_when_other_picked": share, "standard_error": se,
+            "bound": bound, "distance_from_bound_in_standard_errors": (share - bound) / se,
+            "mean_pbo": out["mean_pbo"]}
+
+
 def settings() -> dict:
     """The settings the run used, read from the constants."""
     return {"months": C.G3_MONTHS, "trials": C.G3_TRIALS, "blocks": C.G3_BLOCKS,
@@ -266,13 +347,37 @@ def _twelve_digits(figures: dict) -> dict:
     return {k: float(f"{v:.12g}") if isinstance(v, float) else v for k, v in figures.items()}
 
 
-def write_figures_beside(a: dict, d: dict, written_by: str, directory: pathlib.Path = RESULTS_DIR) -> pathlib.Path:
-    """Write the figures beside clauses (a) and (d) to a file of their own in results/simulation/.
-    They depend on the seed alone, and no level reads them."""
+def settings_beside() -> dict:
+    """The settings of the figures beside the clauses added on 24 November 2026, read from the constants."""
+    return {"sub_streams": C.BESIDE_G3_SUB_STREAMS, "detectable_annual_sharpes": list(C.G3_DETECTABLE_ANNUAL_SHARPES),
+            "detectable_repetitions": C.G3_DETECTABLE_REPETITIONS, "bound_repetitions": C.G3_BOUND_REPETITIONS}
+
+
+def write_figures_beside(a: dict, d: dict, written_by: str, directory: pathlib.Path = RESULTS_DIR,
+                         d_deflated: dict = None, bound: dict = None) -> pathlib.Path:
+    """Write the figures beside clauses (a) and (d) to a file of their own in results/simulation/,
+    with the deflated Sharpe ratio on clause (d)'s repetitions and the bound's share over further
+    repetitions when they are given. They depend on the seed alone, and no level reads them."""
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / "g3_figures_beside.json"
+    record = {"written_by": written_by, "settings": settings(), "beside_clause_a": _twelve_digits(a),
+              "beside_clause_d": _twelve_digits(d)}
+    if d_deflated is not None or bound is not None:
+        record["settings_added_on_24_november_2026"] = settings_beside()
+    if d_deflated is not None:
+        record["deflated_sharpe_ratio_on_clause_d"] = _twelve_digits(d_deflated)
+    if bound is not None:
+        record["bound_further_repetitions"] = _twelve_digits(bound)
     with open(path, "w", encoding="utf-8") as f:
-        json.dump({"written_by": written_by, "settings": settings(), "beside_clause_a": _twelve_digits(a),
-                   "beside_clause_d": _twelve_digits(d)}, f, indent=1)
+        json.dump(record, f, indent=1)
         f.write("\n")
+    return path
+
+
+def write_detectable_effects(table: pd.DataFrame, directory: pathlib.Path = RESULTS_DIR) -> pathlib.Path:
+    """Write the detectable effects to results/simulation/g3_detectable_effects.csv. They depend on the seed
+    alone, and no level reads them."""
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / "g3_detectable_effects.csv"
+    table.to_csv(path, index=False, float_format="%.12g")
     return path

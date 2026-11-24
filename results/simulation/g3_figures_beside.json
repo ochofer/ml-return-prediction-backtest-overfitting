@@ -40,5 +40,37 @@
   "pbo_from_other_picked": 0.0986666666667,
   "pbo_from_planted_picked": 0.000993506493506,
   "mean_pbo": 0.0996601731602
+ },
+ "settings_added_on_24_november_2026": {
+  "sub_streams": {
+   "detectable_effects": 3,
+   "bound": 4
+  },
+  "detectable_annual_sharpes": [
+   0.0,
+   0.25,
+   0.5,
+   0.75,
+   1.0,
+   1.5
+  ],
+  "detectable_repetitions": 1000,
+  "bound_repetitions": 20000
+ },
+ "deflated_sharpe_ratio_on_clause_d": {
+  "repetitions": 1000,
+  "level": 0.95,
+  "share_above_level": 0.542,
+  "median": 0.95722484142,
+  "mean_threshold": 0.175296056282,
+  "threshold_without_effect": 0.139373147715
+ },
+ "bound_further_repetitions": {
+  "repetitions": 20000,
+  "share_lower_when_other_picked": 0.515431270244,
+  "standard_error": 0.00232978979177,
+  "bound": 0.516129032258,
+  "distance_from_bound_in_standard_errors": -0.299495695424,
+  "mean_pbo": 0.096724025974
  }
 }

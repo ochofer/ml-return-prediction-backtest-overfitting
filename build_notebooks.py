@@ -43,13 +43,13 @@ NB12 = [
     md('''
 # 12 The known-answer simulation: gate G3
 
-**What this notebook does.** It tests the code of the study's two overfitting statistics on made-up returns whose answer is known. Each repetition makes up 228 months of returns for 32 trials, with a random generator, from the standard normal distribution. With a mean of zero in every column, no trial has a true effect, and the statistics have to say so. A last set of repetitions gives one trial a true effect, and the statistics have to find it.
+**What this notebook does.** It tests the code of the study's two overfitting statistics on made-up returns whose answer is known. Each repetition makes up 228 months of returns for 32 trials, with a random generator, from the standard normal distribution. With a mean of zero in every column, no trial has a true effect, and the statistics have to say so. A last set of repetitions gives one trial a true effect, and measures how the two statistics respond.
 
 **Why it comes at this point.** Gate G3 must pass before either statistic is computed on the study's own returns. It reads no data of any kind, so it runs as soon as its settings are in the repository. The notebook needs no data root.
 
 **What it judges.** Gate G3, in four clauses, (a) to (d).
 
-**What to expect.** The numbers under "What I expect to see", each with the reason behind it. The whole run takes about ten seconds.
+**What to expect.** The numbers under "What I expect to see", each with the reason behind it. The whole run takes about two minutes, most of it in the further repetitions of step 6.
 '''),
     md('''
 ## Terms used in this notebook
@@ -82,7 +82,7 @@ The levels were set on 18 November 2026 and stand in `src/mlrp/constants.py`, se
 1. **Clause (a).** Over 4,000 repetitions with zero means, the mean of the best of the 32 Sharpe ratios lies within 5 per cent of the expected best Sharpe ratio. At 228 months and 32 trials the formula gives 0.1394 a month (step 2 computes it). The formula approximates the highest of 32 normal numbers, so the simulation's mean should sit near it and need not equal it.
 2. **Clause (b).** In the same 4,000 repetitions, the best trial's deflated Sharpe ratio is above 0.95 in at most 5 per cent of them, and its median lies between 0.40 and 0.60. With no true effect the best Sharpe ratio scatters around the expected best, so the deflated Sharpe ratio scatters around one half and rarely reaches 0.95.
 3. **Clause (c).** Over 1,000 new repetitions with zero means, the mean probability of backtest overfitting lies between 0.45 and 0.55. With no true effect, the trial that is best in-sample is an ordinary trial out-of-sample, so it lands in the lower half of the ranks in half of the splits.
-4. **Clause (d).** With the first trial given a true Sharpe ratio of 1.0 a year, which is 1 / √12 = 0.289 a month, that trial has the best Sharpe ratio over the 228 months in at least 90 per cent of 1,000 repetitions, and the mean probability of backtest overfitting is below 0.25. Over 228 months a trial's Sharpe ratio has a standard error near 1 / √227 = 0.066 a month, so 0.289 stands more than four standard errors above zero and well above 0.139, the expected best of the other 31 trials, which have no effect.
+4. **Clause (d).** With the first trial given a true Sharpe ratio of 1.0 a year, which is 1 / √12 = 0.289 a month, that trial has the best Sharpe ratio over the 228 months in at least 90 per cent of 1,000 repetitions, and the mean probability of backtest overfitting is below 0.25. Over 228 months a trial's Sharpe ratio has a standard error near 1 / √227 = 0.066 a month, so 0.289 stands more than four standard errors above zero and well above 0.139, the expected best of the other 31 trials, which have no effect. The words of the first part of (d) were written on 20 November 2026, after the run of 19 November. Its level stands as committed before the run.
 
 A clause not met stops the study before notebook 13. The statistic's code is then corrected, each change recorded, the same seed run again, and no level changes.
 '''),
@@ -190,6 +190,24 @@ d = S.clause_d()
 print("planted trial best in", round(100 * d["planted_is_best"].mean(), 1), "per cent of", len(d), "repetitions")
 d["pbo"].describe().round(4)'''),
     md('''
+**The deflated Sharpe ratio on clause (d)'s repetitions.** Added on 24 November 2026, after the simulation's results were known, and no level reads it.
+
+Clause (d) tests the probability of backtest overfitting, and not the deflated Sharpe ratio. On its repetitions the best trial's deflated Sharpe ratio is above 0.95 in 0.542 of them, with a median of 0.957: the variance across trials includes the planted trial's Sharpe ratio, which raises the threshold from 0.1394 to 0.1753 a month on average.
+
+The cell draws clause (d)'s 1,000 repetitions again, from its own sub-stream, and computes the deflated Sharpe ratio of the best trial in each, with its threshold.
+'''),
+    code('''
+dd = S.clause_d_deflated()
+assert dd["planted_is_best"].equals(d["planted_is_best"])
+d_deflated = S.beside_clause_d_deflated(dd)
+rows = [
+    ("share of repetitions with the best trial's deflated Sharpe ratio above 0.95", d_deflated["share_above_level"]),
+    ("median deflated Sharpe ratio of the best trial", d_deflated["median"]),
+    ("mean threshold, a month", d_deflated["mean_threshold"]),
+    ("threshold with no effect at a variance of 1 / 227, a month", d_deflated["threshold_without_effect"]),
+]
+display(pd.DataFrame(rows, columns=["figure", "value"]).round(4))'''),
+    md('''
 **The splits of clause (d).** The figures of this part of the step were added on 20 November 2026, after the run of 19 November, and no level reads them.
 
 Clause (d) counts repetitions: in each one, the planted trial has or has not the highest Sharpe ratio over the 228 months. The probability of backtest overfitting counts splits, and in each split the best trial is picked on one half of the months, 6 blocks of 19, which is 114 months. For each repetition the cell counts three kinds of split:
@@ -219,9 +237,38 @@ display(pd.DataFrame(rows, columns=["figure", "value"]).round(4))'''),
 **The bound beside the share.** Added on 21 November 2026, after the simulation's results were known, with no verdict: of the splits in which another trial is picked, the share that ends in the lower half out-of-sample cannot exceed 16/31 = 0.516 on average, because the two halves of the months are independent, so the out-of-sample rank of a picked trial without an effect is uniform among the 31 trials without one, and it ends in the lower half only if at most 15 of them are below it. The standard error in the table is computed from the counts of each repetition, as the spread of a ratio of two sums over 1,000 independent repetitions.
 '''),
     md('''
+**The share over further repetitions.** Added on 24 November 2026, after the simulation's results were known, and no level reads it.
+
+On these 1,000 repetitions the share is 0.543, 2.4 standard errors above the bound. Over 20,000 further repetitions it is 0.515, with a standard error of 0.0023.
+
+The cell draws the further repetitions of clause (d)'s setting from the sub-stream of the bound (constants section 14). It takes about a minute.
+'''),
+    code('''
+bound = S.bound_share()
+rows = [
+    ("share on clause (d)'s repetitions", d_beside["share_lower_when_other_picked"], d_beside["share_lower_when_other_picked_se"], d_beside["repetitions"]),
+    ("share on further repetitions", bound["share_lower_when_other_picked"], bound["standard_error"], bound["repetitions"]),
+]
+display(pd.DataFrame(rows, columns=["figure", "share", "standard error", "repetitions"]).round(4))
+print("bound 16/31:", round(bound["bound"], 4), "| distance of the further share from it:",
+      round(bound["distance_from_bound_in_standard_errors"], 1), "standard errors")'''),
+    md('''
+**The detectable effects, beside clauses (b) and (d).** Added on 24 November 2026, after the simulation's results were known, and no level reads it.
+
+Clause (b) has no trial with an effect, and clause (d) one trial of 1.0 a year. The table fills in between and above: in each row the first trial has the true Sharpe ratio a year of its row, 0, 0.25, 0.5, 0.75, 1.0 or 1.5, and the other 31 trials have none, at 228 months, 32 trials and 12 blocks, over 1,000 repetitions. Each row draws from its own position on the sub-stream of the detectable effects (constants section 14). For each row the table gives the share of repetitions in which the first trial is the best, the share in which the best trial's deflated Sharpe ratio is above 0.95 and its median, and the mean probability of backtest overfitting and the share of repetitions in which it is below 0.25.
+
+Expectations E8 and E9 (constants section 13) read the same two statistics on the study's own 32 trials: E8 says the best trial's deflated Sharpe ratio is below 0.95, and E9 that the probability of backtest overfitting is at least 0.25. The last two columns give the share of repetitions in which each would be met. The cell takes about half a minute.
+'''),
+    code('''
+effects = S.detectable_effects()
+display(effects.drop(columns="repetitions").round(3))'''),
+    md('''
+At a true Sharpe ratio of 0.5 a year in one of 32 trials, E8 would be met in 0.979 and E9 in 0.703 of the repetitions.
+'''),
+    md('''
 ## 7. The verdicts
 
-The four clauses against their levels. The cell writes the three tables of repetitions, the summary and the provenance record to `results/simulation/`, and the figures of steps 3 and 6 that no level reads to a file of their own there, `g3_figures_beside.json`.
+The four clauses against their levels. The cell writes the three tables of repetitions, the summary and the provenance record to `results/simulation/`, and the figures of steps 3 and 6 that no level reads to two files of their own there, `g3_figures_beside.json` and `g3_detectable_effects.csv`.
 '''),
     code('''
 v = S.verdicts(ab, c, d)
@@ -240,14 +287,17 @@ print("Gate G3:", word[v["all_met"]])
 
 for path in S.write_results(ab, c, d, v, written_by="notebooks/12_known_answer.ipynb"):
     print("written:", path.relative_to(ROOT))
-path = S.write_figures_beside(a_beside, d_beside, written_by="notebooks/12_known_answer.ipynb")
+path = S.write_figures_beside(a_beside, d_beside, written_by="notebooks/12_known_answer.ipynb",
+                              d_deflated=d_deflated, bound=bound)
+print("written:", path.relative_to(ROOT))
+path = S.write_detectable_effects(effects)
 print("written:", path.relative_to(ROOT))'''),
     md('''
 ## What was learned, and what could be wrong
 
 What the gate shows when its four clauses are met:
 
-- The code of the expected best Sharpe ratio, of the deflated Sharpe ratio and of the probability of backtest overfitting returns the known answers on returns with no true effect, and finds a true effect of 1.0 a year when one trial has it.
+- The code of the expected best Sharpe ratio, of the deflated Sharpe ratio and of the probability of backtest overfitting returns the known answers on returns with no true effect, and when one trial has a true effect of 1.0 a year the mean probability of backtest overfitting falls from 0.498 to 0.100.
 - The deflated Sharpe ratio of the best of 32 trials with no effect sits near one half: picking the best of 32 gives a Sharpe ratio that looks better than any single trial, and the statistic takes that out.
 
 What could be wrong, and where each point is taken up:
@@ -586,7 +636,7 @@ if not g1a["g1a_met"]:
 - The table above sets each expectation beside its result. Gate G1 (a) is met only if all three of its parts are.
 - Equal counts show that the copy is Stock-Level Tracking's layer on this extraction. They do not test the layer again: that study set the universe's count beside CRSP's count, and the universe's return beside the index's own return, in its notebooks 02 and 04.
 - A count that agrees does not show that the right stocks are in the universe, only that their number is right. Stock-Level Tracking's comparison of returns is the finer test, and it stands for this study through the copy.
-- The universe reads membership on the last trading day of the month before, so a stock that joins mid-month enters the universe the month after. Every characteristic in notebooks 03 and 04 is measured on that same day, so the panel uses nothing an investor could not have known when the month began.
+- The universe reads membership on the last trading day of the month before, so a stock that joins mid-month enters the universe the month after. Every characteristic in notebooks 03 and 04 is measured on that same day, so the panel uses nothing dated after the last trading day of the month before. Notebooks 04 and 05 give what this does not rule out: restated accounts and revised data.
 '''),
 ]
 
@@ -768,8 +818,8 @@ print(results.to_string(index=False))
 ## What was learned, and what could be wrong
 
 - The table above sets each expectation beside its result. None has a verdict here: coverage is judged by gate G1 (b) in notebook 05.
-- Beta and idiosyncratic volatility are measured against French's market, the return of all CRSP stocks weighted by their market value, and over a year of daily returns. Ang, Hodrick, Xing and Zhang (2006) measure idiosyncratic volatility within one month, against the market and two portfolios that stand for size and value. The two measures rank stocks in a similar order, and this study's version is the one in the constants.
-- Daily returns in the 1990s include stocks traded on NASDAQ, where volume was counted differently before 2004. Volume enters only dollar volume, and dollar volume is ranked within each month, so a difference that moves every NASDAQ stock alike moves their ranks against NYSE stocks. The panel does not correct for it.
+- Beta and idiosyncratic volatility are measured against French's market, the return of all CRSP stocks weighted by their market value, and over a year of daily returns. Ang, Hodrick, Xing and Zhang (2006) measure idiosyncratic volatility within one month, against the market and two portfolios that stand for size and value. This study's version is the one in the constants.
+- The monthly file's volume enters only dollar volume. Anderson and Dyl (2007) state that trading volume has historically been overstated for NASDAQ stocks relative to NYSE stocks. Dollar volume is ranked within each month, so an overstatement that moves every NASDAQ stock alike moves their ranks against NYSE stocks. The panel does not correct for it.
 - Each characteristic is measured from days up to the last trading day of month t-1. Notebook 05 builds 24 months a second time, from inputs cut at that day, and compares the two builds, which is the test that nothing later was used.
 '''),
 ]
@@ -784,7 +834,7 @@ NB04 = [
 
 **What this notebook does.** For every member-month of the panel's window it finds the stock's company in Compustat through CRSP's link, picks the company's latest annual record that is at least six and at most 24 months old on the last trading day of month t-1, and measures four characteristics from it: book-to-market, earnings-to-price, operating profitability and asset growth. It counts by year how many member-months have each one, and why the others do not.
 
-**Why it comes here.** The accounts of a fiscal year are published some weeks after it ends. A record used before it was published would give the models information no investor had. The six-month rule, from Fama and French (1992), leaves time for the accounts to appear.
+**Why it comes here.** The accounts of a fiscal year are published some weeks after it ends. A record used before it was published would give the models information no investor had. The six-month rule, from Gu, Kelly and Xiu (2020, p. 2248), leaves time for the accounts to appear.
 
 **What it judges.** No gate and no expectation with a level. Gate G1 (b), judged in notebook 05, asks book-to-market and operating profitability to be present for at least 80 per cent of each month's members, and the other two for at least 90 per cent.
 
@@ -804,7 +854,7 @@ NB04 = [
 | age of a record | the months from the month of its fiscal year end to month t-1. A record of December 2023 is 6 months old in June 2024 |
 | book equity | stockholders' equity, plus deferred taxes and investment tax credit, minus preferred stock. Stockholders' equity is `seq`, else common equity, the item named `ceq`, plus `pstk`, else total assets minus total liabilities. Preferred stock is the redemption value `pstkrv`, else the liquidating value `pstkl`, else the par value `pstk`, else zero. Book equity that is not positive is missing |
 | market value at the fiscal year end | the price at the fiscal year end times shares outstanding, `prcc_f` times `csho` |
-| book-to-market | book equity over the market value at the same fiscal year end (Fama and French 1992, 1993) |
+| book-to-market | book equity, as Kenneth French's data library defines it, over the market value at the same fiscal year end, where the library divides by the market value at the end of December |
 | earnings-to-price | income before extraordinary items, `ib`, over the same market value. Negative values are kept (Basu 1983) |
 | operating profitability | revenue less cost of goods sold, selling, general and administrative expenses and interest expense, over book equity (Fama and French 2015). Revenue and at least one of the three costs must be present |
 | asset growth | total assets over the same company's total assets a fiscal year before, less one (Cooper, Gulen and Schill 2008) |
@@ -854,7 +904,7 @@ print("date values present that did not parse:", {**bad_links, **bad_funda} or "
 
 `characteristics.accounting_characteristics` picks, for each member-month with a GVKEY, the record with the latest fiscal year end that is at least 6 months old on the last trading day of month t-1, and drops it when it is more than 24 months old.
 
-**A worked example of the timing.** A company with a fiscal year ending on 31 December 2022 publishes its accounts in February or March 2023. For month t = June 2023, month t-1 is May 2023, 5 months after the year end, so the study still uses the record of December 2021, 17 months old. For month t = July 2023, month t-1 is June 2023, 6 months on, and the record of December 2022 is used. That is the timing of Fama and French (1992), who match the accounts of a year with returns from July of the next.
+**A worked example of the timing.** A company with a fiscal year ending on 31 December 2022 publishes its accounts in February or March 2023. For month t = June 2023, month t-1 is May 2023, 5 months after the year end, so the study still uses the record of December 2021, 17 months old. For month t = July 2023, month t-1 is June 2023, 6 months on, and the record of December 2022 is used. For a December year end that is the timing of Fama and French (1992), who match the accounts of a year with returns from July of the next.
 '''),
     code('''
 t0 = time.time()
@@ -890,9 +940,18 @@ print("age of the record used, share of member-months with a record:")
 print(age_bands.to_string())
 '''),
     md('''
-## 5. What is kept and what is committed
+## 5. The member-months without a company
 
-The four characteristics of every member-month, with its GVKEY and the age of its record, are kept in `local/accounting_characteristics.parquet` for notebook 05. Two files go into `results/20260928/`: the table by year and a summary with the counts of the annual records and the ages.
+The table above counts the member-months the links leave without a GVKEY. `characteristics.without_a_company` counts how many members they are, each member's member-months with its first and last year, and how many of them a link of another type would reach: a link in CRSP's table that names the member's PERMNO and is valid on the last trading day of month t-1, of a type other than LC and LU, with any primary flag. It prints counts and years only. Added on 24 November 2026.
+'''),
+    code('''
+without = K.without_a_company(members, raw_links)
+print(json.dumps(without, indent=1))
+'''),
+    md('''
+## 6. What is kept and what is committed
+
+The four characteristics of every member-month, with its GVKEY and the age of its record, are kept in `local/accounting_characteristics.parquet` for notebook 05. Two files go into `results/20260928/`: the table by year and a summary with the counts of the annual records, the ages and the member-months without a company.
 '''),
     code('''
 D.write_local("accounting_characteristics.parquet", a.assign(month=a["month"].astype(str)))
@@ -903,7 +962,8 @@ written = [D.write_results("accounting_coverage_by_year.csv", frame=table.reset_
                "member_months_with_more_than_one_valid_link": int(more_than_one_link),
                "age_of_the_record_used": {str(k): float(v) for k, v in age_bands.items()},
                "present": {c: int(a[c].notna().sum()) for c in K.ACCOUNTING},
-               "date_values_not_parsed": {**bad_links, **bad_funda}})]
+               "date_values_not_parsed": {**bad_links, **bad_funda},
+               "member_months_without_a_company": without})]
 for path in written:
     print("written:", path.relative_to(ROOT))
 results = pd.DataFrame([
@@ -924,6 +984,7 @@ print(results.to_string(index=False))
 - The table above sets each expectation beside its result. None has a verdict here: coverage is judged by gate G1 (b) in notebook 05.
 - Compustat's records are the values as they stand in the extraction of 28 September 2026. A company that restated its accounts shows the restated figures, which were not known on the day the study uses them. The six-month rule protects against using a year's accounts before they were published. It does not undo restatements, and no data held here could.
 - Two share classes of one company carry the same four values, since they have the same accounts. Their count by year is in the table.
+- The 450 member-months without a company are five members, one in all 408 months, one in 39 months from 2021 and three in one month each, and links of two types the study does not use reach 447 of them, LS all 447 and LX 39 of those, leaving the three single months.
 - A book equity that is not positive leaves book-to-market and operating profitability missing. Notebook 05 sets those cells to the month's median after ranking, as for any missing value, and counts them.
 '''),
 ]
