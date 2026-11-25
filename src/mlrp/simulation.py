@@ -247,24 +247,40 @@ def clause_d_deflated(repetitions: int = C.G3_REPETITIONS_C_D, months: int = C.G
                       trials: int = C.G3_TRIALS) -> pd.DataFrame:
     """The draws of clause (d) again. Per repetition: whether the planted trial has the highest Sharpe
     ratio, and the deflated Sharpe ratio of the trial that has it, with its threshold, the expected best
-    Sharpe ratio at the variance of the 32 trials' Sharpe ratios."""
+    Sharpe ratio at the variance of the 32 trials' Sharpe ratios. Beside them, added on 25 November 2026,
+    the same deflated Sharpe ratio and threshold with the variance taken from the 31 trials without an
+    effect alone, the number of trials still 32."""
     rng = rng_for("d")
     planted = planted_monthly_sharpe()
     rows = []
     for i in range(repetitions):
-        out = O.deflated_sharpe_ratio(made_up_returns(rng, months, trials, planted))
-        rows.append((i, out["best_trial"] == 0, out["deflated_sharpe_ratio"], out["threshold"]))
-    return pd.DataFrame(rows, columns=["repetition", "planted_is_best", "deflated_sharpe_ratio", "threshold"])
+        r = made_up_returns(rng, months, trials, planted)
+        out = O.deflated_sharpe_ratio(r)
+        variance_31 = float(np.var(O.sharpe_ratio(r)[1:], ddof=1))
+        rows.append((i, out["best_trial"] == 0, out["deflated_sharpe_ratio"], out["threshold"],
+                     O.deflated_sharpe_ratio_from_moments(out["best_sharpe"], out["n_obs"], out["skewness"],
+                                                          out["kurtosis"], trials, variance_31),
+                     O.expected_max_sharpe(trials, variance_31)))
+    return pd.DataFrame(rows, columns=["repetition", "planted_is_best", "deflated_sharpe_ratio", "threshold",
+                                       "deflated_sharpe_ratio_variance_of_31", "threshold_variance_of_31"])
 
 
 def beside_clause_d_deflated(dd: pd.DataFrame, months: int = C.G3_MONTHS, trials: int = C.G3_TRIALS) -> dict:
     """The deflated Sharpe ratio on clause (d)'s repetitions: the share above the level, its median and the
-    mean threshold, beside the threshold with no effect at the variance of 1 / (T - 1). No level reads it."""
-    return {"repetitions": int(len(dd)), "level": C.DSR_LEVEL,
-            "share_above_level": float((dd["deflated_sharpe_ratio"] > C.DSR_LEVEL).mean()),
-            "median": float(dd["deflated_sharpe_ratio"].median()),
-            "mean_threshold": float(dd["threshold"].mean()),
-            "threshold_without_effect": float(O.expected_max_sharpe(trials, 1 / (months - 1)))}
+    mean threshold, beside the threshold with no effect at the variance of 1 / (T - 1). With the columns of
+    clause_d_deflated() added on 25 November 2026, the same three figures with the variance of the 31 trials
+    without an effect alone. No level reads them."""
+    out = {"repetitions": int(len(dd)), "level": C.DSR_LEVEL,
+           "share_above_level": float((dd["deflated_sharpe_ratio"] > C.DSR_LEVEL).mean()),
+           "median": float(dd["deflated_sharpe_ratio"].median()),
+           "mean_threshold": float(dd["threshold"].mean()),
+           "threshold_without_effect": float(O.expected_max_sharpe(trials, 1 / (months - 1)))}
+    if "deflated_sharpe_ratio_variance_of_31" in dd:
+        out["with_the_variance_of_31_without_effect_added_on_25_november_2026"] = {
+            "share_above_level": float((dd["deflated_sharpe_ratio_variance_of_31"] > C.DSR_LEVEL).mean()),
+            "median": float(dd["deflated_sharpe_ratio_variance_of_31"].median()),
+            "mean_threshold": float(dd["threshold_variance_of_31"].mean())}
+    return out
 
 
 def detectable_effects(annual_sharpes=C.G3_DETECTABLE_ANNUAL_SHARPES, repetitions: int = C.G3_DETECTABLE_REPETITIONS,
@@ -343,8 +359,9 @@ def write_results(ab: pd.DataFrame, c: pd.DataFrame, d: pd.DataFrame, summary: d
 
 def _twelve_digits(figures: dict) -> dict:
     """The figures with every number rounded to 12 significant digits, as the tables are written,
-    so that a run on another machine writes the same bytes."""
-    return {k: float(f"{v:.12g}") if isinstance(v, float) else v for k, v in figures.items()}
+    so that a run on another machine writes the same bytes, in nested figures too."""
+    return {k: float(f"{v:.12g}") if isinstance(v, float) else _twelve_digits(v) if isinstance(v, dict) else v
+            for k, v in figures.items()}
 
 
 def settings_beside() -> dict:

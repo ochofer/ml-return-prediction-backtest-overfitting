@@ -550,12 +550,17 @@ E7_MODELS = E2_NONLINEAR_MODELS
 # E8: the best trial's deflated Sharpe ratio is below DSR_LEVEL.
 #     How often E8 is met with one trial of a given true Sharpe ratio a year, on
 #     made-up returns: results/simulation/g3_detectable_effects.csv (notebook 12,
-#     step 6). Its verdict carries that table's figures at 0.5 a year. The
-#     pointer was added on 24 November 2026.
+#     step 6). Its verdict carries that table's row with no effect beside its
+#     row at 0.5 a year, to two decimals. 0.5 a year is half the Sharpe ratio
+#     gate G3 plants, G3_D_ANNUAL_SHARPE. The pointer was added on 24 November
+#     2026, and the row with no effect and the half on 25 November 2026.
 # E9: the probability of backtest overfitting is at least 0.25.
 #     How often E9 is met with one trial of a given true Sharpe ratio a year, on
-#     made-up returns: the same table. Its verdict carries that table's figures
-#     at 0.5 a year. The pointer was added on 24 November 2026.
+#     made-up returns: the same table. Its verdict carries that table's row with
+#     no effect beside its row at 0.5 a year, to two decimals. 0.5 a year is half
+#     the Sharpe ratio gate G3 plants, G3_D_ANNUAL_SHARPE. The pointer was added
+#     on 24 November 2026, and the row with no effect and the half on
+#     25 November 2026.
 E9_PBO_MIN = 0.25
 # E10: for the elastic net and the boosted trees, choosing the configuration by
 #      purged and embargoed cross-validation changes the R² by less than

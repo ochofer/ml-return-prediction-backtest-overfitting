@@ -194,7 +194,9 @@ d["pbo"].describe().round(4)'''),
 
 Clause (d) tests the probability of backtest overfitting, and not the deflated Sharpe ratio. On its repetitions the best trial's deflated Sharpe ratio is above 0.95 in 0.542 of them, with a median of 0.957: the variance across trials includes the planted trial's Sharpe ratio, which raises the threshold from 0.1394 to 0.1753 a month on average.
 
-The cell draws clause (d)'s 1,000 repetitions again, from its own sub-stream, and computes the deflated Sharpe ratio of the best trial in each, with its threshold.
+Added on 25 November 2026, after the simulation's results were known, and no level reads it: with the variance of the 31 other trials alone the share is 0.720, so the larger part of the shortfall from one comes from the sample's 228 months.
+
+The cell draws clause (d)'s 1,000 repetitions again, from its own sub-stream, and computes the deflated Sharpe ratio of the best trial in each, with its threshold, once with the variance of the 32 trials' Sharpe ratios and once with the variance of the 31 trials without an effect.
 '''),
     code('''
 dd = S.clause_d_deflated()
@@ -205,6 +207,10 @@ rows = [
     ("median deflated Sharpe ratio of the best trial", d_deflated["median"]),
     ("mean threshold, a month", d_deflated["mean_threshold"]),
     ("threshold with no effect at a variance of 1 / 227, a month", d_deflated["threshold_without_effect"]),
+    ("share above 0.95 with the variance of the 31 trials without an effect",
+     d_deflated["with_the_variance_of_31_without_effect_added_on_25_november_2026"]["share_above_level"]),
+    ("mean threshold with that variance, a month",
+     d_deflated["with_the_variance_of_31_without_effect_added_on_25_november_2026"]["mean_threshold"]),
 ]
 display(pd.DataFrame(rows, columns=["figure", "value"]).round(4))'''),
     md('''
@@ -263,7 +269,7 @@ Expectations E8 and E9 (constants section 13) read the same two statistics on th
 effects = S.detectable_effects()
 display(effects.drop(columns="repetitions").round(3))'''),
     md('''
-At a true Sharpe ratio of 0.5 a year in one of 32 trials, E8 would be met in 0.979 and E9 in 0.703 of the repetitions.
+With no effect in any of 32 trials, E8 would be met in 1.00 of the repetitions and E9 in 0.91. With a true Sharpe ratio of 0.5 a year in one of them, half the effect gate G3 plants, they would be met in 0.98 and 0.70. So a verdict of met on E8 hardly separates no effect from an effect of that size.
 '''),
     md('''
 ## 7. The verdicts
@@ -368,7 +374,7 @@ NB01 = [
 | SHA-256 hash | a fingerprint of 64 characters computed from a file's bytes. A change of one byte changes the hash |
 | digest of the entries | the SHA-256 of the manifest's records for the study's eight tables alone: each file's name, rows and hash. A pull that adds other tables to the extraction changes the manifest's hash and leaves this digest as it is |
 | table | one of the extraction's datasets, such as CRSP's monthly stock file. A table is stored in one file or in one file per year |
-| copied code | seven modules of the study Stock-Level Tracking and one of the study Signal Evaluation, copied unchanged into `src/mlrp/source/` |
+| copied code | seven modules of the study Stock-Level Tracking and one of the study Volatility-managed portfolios, copied unchanged into `src/mlrp/source/` |
 | Sharpe ratio | a portfolio's mean return over the standard deviation of its return |
 | provenance record | `results/20260928/provenance.json`: the extraction, its two checks, the fetch dates, the commits the copied code comes from and the versions of the tools every later result was built with |
 '''),
@@ -430,7 +436,7 @@ print({key: len(cols) for key, cols in D.COLUMNS.items()})
     md('''
 ## 4. The copied code
 
-The universe, the returns and the reading of the extraction come from Stock-Level Tracking's data layer, copied unchanged from its commit named in the constants, and the interval for the difference of two Sharpe ratios comes from Signal Evaluation. The SHA-256 of each copy is computed here and compared with the constants. The tests compare each copy with its source file as well.
+The universe, the returns and the reading of the extraction come from Stock-Level Tracking's data layer, copied unchanged from its commit named in the constants, and the interval for the difference of two Sharpe ratios comes from Volatility-managed portfolios. The SHA-256 of each copy is computed here and compared with the constants. The tests compare each copy with its source file as well.
 '''),
     code('''
 source = ROOT / C.COPIED_INTO
@@ -984,7 +990,7 @@ print(results.to_string(index=False))
 - The table above sets each expectation beside its result. None has a verdict here: coverage is judged by gate G1 (b) in notebook 05.
 - Compustat's records are the values as they stand in the extraction of 28 September 2026. A company that restated its accounts shows the restated figures, which were not known on the day the study uses them. The six-month rule protects against using a year's accounts before they were published. It does not undo restatements, and no data held here could.
 - Two share classes of one company carry the same four values, since they have the same accounts. Their count by year is in the table.
-- The 450 member-months without a company are five members, one in all 408 months, one in 39 months from 2021 and three in one month each, and links of two types the study does not use reach 447 of them, LS all 447 and LX 39 of those, leaving the three single months.
+- The 450 member-months without a company are five members, one in all 408 months, one in 39 months from 2021 and three in one month each, and links of two types the study does not use reach 447 of them, LS all 447 and LX 39 of those, leaving three.
 - A book equity that is not positive leaves book-to-market and operating profitability missing. Notebook 05 sets those cells to the month's median after ranking, as for any missing value, and counts them.
 '''),
 ]

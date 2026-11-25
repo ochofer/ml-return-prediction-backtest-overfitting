@@ -63,7 +63,12 @@
   "share_above_level": 0.542,
   "median": 0.95722484142,
   "mean_threshold": 0.175296056282,
-  "threshold_without_effect": 0.139373147715
+  "threshold_without_effect": 0.139373147715,
+  "with_the_variance_of_31_without_effect_added_on_25_november_2026": {
+   "share_above_level": 0.72,
+   "median": 0.987626026782,
+   "mean_threshold": 0.13859186595
+  }
  },
  "bound_further_repetitions": {
   "repetitions": 20000,

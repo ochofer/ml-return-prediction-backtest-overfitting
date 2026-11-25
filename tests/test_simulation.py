@@ -175,6 +175,15 @@ def test_the_deflated_sharpe_ratio_on_clause_d_uses_clause_d_draws():
     assert out["share_above_level"] == (dd["deflated_sharpe_ratio"] > C.DSR_LEVEL).mean()
     assert out["median"] == dd["deflated_sharpe_ratio"].median() and out["mean_threshold"] == dd["threshold"].mean()
     assert out["threshold_without_effect"] == O.expected_max_sharpe(C.G3_TRIALS, 1 / (C.G3_MONTHS - 1))
+    # With the variance of the 31 trials without an effect, the number of trials still 32.
+    rng = S.rng_for("d")
+    r = S.made_up_returns(rng, C.G3_MONTHS, C.G3_TRIALS, S.planted_monthly_sharpe())
+    srs = O.sharpe_ratio(r)
+    assert math.isclose(dd["threshold_variance_of_31"].iloc[0],
+                        O.expected_max_sharpe(C.G3_TRIALS, float(np.var(srs[1:], ddof=1))))
+    assert (dd["threshold_variance_of_31"] < dd["threshold"]).all()
+    beside_31 = out["with_the_variance_of_31_without_effect_added_on_25_november_2026"]
+    assert beside_31["share_above_level"] == (dd["deflated_sharpe_ratio_variance_of_31"] > C.DSR_LEVEL).mean()
 
 
 def test_the_detectable_effects_draw_each_row_from_its_own_position():
@@ -217,8 +226,12 @@ def test_the_figures_notebook_12_quotes_from_its_run():
         f"{(d['share_lower_when_other_picked'] - d['share_lower_bound_without_effect']) / d['share_lower_when_other_picked_se']:.1f} standard errors above the bound",
         f"Over {bound['repetitions']:,} further repetitions it is {bound['share_lower_when_other_picked']:.3f}, "
         f"with a standard error of {bound['standard_error']:.4f}",
-        f"E8 would be met in {effects.loc[0.5, 'share_e8_met']:.3f} and E9 in {effects.loc[0.5, 'share_e9_met']:.3f} of the repetitions",
+        f"with the variance of the 31 other trials alone the share is "
+        f"{dd['with_the_variance_of_31_without_effect_added_on_25_november_2026']['share_above_level']:.3f}",
+        f"E8 would be met in {effects.loc[0.0, 'share_e8_met']:.2f} of the repetitions and E9 in {effects.loc[0.0, 'share_e9_met']:.2f}",
+        f"they would be met in {effects.loc[0.5, 'share_e8_met']:.2f} and {effects.loc[0.5, 'share_e9_met']:.2f}",
     ]
     missing = [q for q in quoted if q not in text]
     assert not missing, f"notebook 12 does not quote {missing}"
     assert bound["repetitions"] >= 20_000 and list(effects.index) == list(C.G3_DETECTABLE_ANNUAL_SHARPES)
+    assert C.G3_DETECTABLE_ANNUAL_SHARPES[2] == C.G3_D_ANNUAL_SHARPE / 2

@@ -157,10 +157,11 @@ def test_the_counts_notebook_04_quotes_on_the_member_months_without_a_company():
     by, years, types = out["member_months_by_member"], out["years_by_member"], out["member_months_reached_by_link_type"]
     singles = sum(1 for n in by if n == 1)
     assert by[0] == C.PANEL_MONTHS and len(by) == out["members"] and sum(by) == out["member_months"]
-    assert out["member_months"] - out["member_months_reached_by_another_link_type"] == singles
+    unreached = out["member_months"] - out["member_months_reached_by_another_link_type"]
     quoted = [f"The {out['member_months']:,} member-months without a company are {words[out['members']]} members",
               f"one in all {by[0]} months, one in {by[1]} months from {years[1][0]} and {words[singles]} in one month each",
-              f"reach {out['member_months_reached_by_another_link_type']:,} of them, LS all {types['LS']:,} and LX {types['LX']:,} of those"]
+              f"reach {out['member_months_reached_by_another_link_type']:,} of them, LS all {types['LS']:,} and LX {types['LX']:,} of those, "
+              f"leaving {words[unreached]}."]
     text = markdown("04_accounting_characteristics.ipynb")
     missing = [q for q in quoted if q not in text]
     assert not missing, f"notebook 04 does not quote {missing}"
