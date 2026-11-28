@@ -41,7 +41,7 @@ def notebook(number, cells):
 
 NB12 = [
     md('''
-# 12 The known-answer simulation: gate G3
+# 12 The known-answer simulation: the overfitting statistics on made-up returns
 
 **What this notebook does.** It tests the code of the study's two overfitting statistics on made-up returns whose answer is known. Each repetition makes up 228 months of returns for 32 trials, with a random generator, from the standard normal distribution. With a mean of zero in every column, no trial has a true effect, and the statistics have to say so. A last set of repetitions gives one trial a true effect, and measures how the two statistics respond.
 
@@ -61,6 +61,7 @@ NB12 = [
 | seed | the number that starts the random generator, so that every run makes up the same returns |
 | draw | one number the random generator produces |
 | Sharpe ratio | the mean monthly return over the standard deviation of the monthly returns. In this notebook it is monthly and never annualised |
+| planted trial | the trial given a true effect in clause (d), a true Sharpe ratio of 1.0 a year |
 | standard error | the standard deviation of an estimate across repetitions: how far an estimate typically lands from its true value |
 | expected best Sharpe ratio | the mean of the highest of N Sharpe ratios when no trial has a true effect, from the formula of Bailey and López de Prado (2014) |
 | Student's t distribution | the distribution of a sample's mean over its estimated standard error, when the sample is normal with a true mean of zero. It has one setting, the degrees of freedom: the sample's length less one. With many degrees of freedom it is close to the standard normal distribution, with slightly more extreme values |
@@ -82,7 +83,7 @@ The levels were set on 18 November 2026 and stand in `src/mlrp/constants.py`, se
 1. **Clause (a).** Over 4,000 repetitions with zero means, the mean of the best of the 32 Sharpe ratios lies within 5 per cent of the expected best Sharpe ratio. At 228 months and 32 trials the formula gives 0.1394 a month (step 2 computes it). The formula approximates the highest of 32 normal numbers, so the simulation's mean should sit near it and need not equal it.
 2. **Clause (b).** In the same 4,000 repetitions, the best trial's deflated Sharpe ratio is above 0.95 in at most 5 per cent of them, and its median lies between 0.40 and 0.60. With no true effect the best Sharpe ratio scatters around the expected best, so the deflated Sharpe ratio scatters around one half and rarely reaches 0.95.
 3. **Clause (c).** Over 1,000 new repetitions with zero means, the mean probability of backtest overfitting lies between 0.45 and 0.55. With no true effect, the trial that is best in-sample is an ordinary trial out-of-sample, so it lands in the lower half of the ranks in half of the splits.
-4. **Clause (d).** With the first trial given a true Sharpe ratio of 1.0 a year, which is 1 / √12 = 0.289 a month, that trial has the best Sharpe ratio over the 228 months in at least 90 per cent of 1,000 repetitions, and the mean probability of backtest overfitting is below 0.25. Over 228 months a trial's Sharpe ratio has a standard error near 1 / √227 = 0.066 a month, so 0.289 stands more than four standard errors above zero and well above 0.139, the expected best of the other 31 trials, which have no effect. The words of the first part of (d) were written on 20 November 2026, after the run of 19 November. Its level stands as committed before the run.
+4. **Clause (d).** With the first trial given a true Sharpe ratio of 1.0 a year, which is 1 / √12 = 0.289 a month, that trial has the best Sharpe ratio over the 228 months in at least 90 per cent of 1,000 repetitions, and the mean probability of backtest overfitting is below 0.25. Over 228 months a trial's Sharpe ratio has a standard error near 1 / √227 = 0.066 a month, so 0.289 stands more than four standard errors above zero and well above 0.139, the expected best of the other 31 trials, which have no effect. The first part of (d), that the trial with the true effect has the best Sharpe ratio in at least 90 per cent of repetitions, was worded on 20 November 2026, after the run of 19 November. Its level of 90 per cent stands as committed before that run.
 
 A clause not met stops the study before notebook 13. The statistic's code is then corrected, each change recorded, the same seed run again, and no level changes.
 '''),
@@ -194,7 +195,7 @@ d["pbo"].describe().round(4)'''),
 
 Clause (d) tests the probability of backtest overfitting, and not the deflated Sharpe ratio. On its repetitions the best trial's deflated Sharpe ratio is above 0.95 in 0.542 of them, with a median of 0.957: the variance across trials includes the planted trial's Sharpe ratio, which raises the threshold from 0.1394 to 0.1753 a month on average.
 
-Added on 25 November 2026, after the simulation's results were known, and no level reads it: with the variance of the 31 other trials alone the share is 0.720, so the larger part of the shortfall from one comes from the sample's 228 months.
+Added on 25 November 2026, after the simulation's results were known, and no level reads it: with the variance of the 31 other trials alone the share is 0.720. So of the gap between 0.542 and one, the planted trial's own Sharpe ratio, by raising the threshold, explains the smaller part, and the sample's 228 months the larger part.
 
 The cell draws clause (d)'s 1,000 repetitions again, from its own sub-stream, and computes the deflated Sharpe ratio of the best trial in each, with its threshold, once with the variance of the 32 trials' Sharpe ratios and once with the variance of the 31 trials without an effect.
 '''),
@@ -222,7 +223,7 @@ Clause (d) counts repetitions: in each one, the planted trial has or has not the
 - the splits in which another trial is the in-sample best and ranks in the lower half out-of-sample
 - the splits in which the planted trial is the in-sample best and ranks in the lower half out-of-sample
 
-The last two kinds together are the splits that the probability of backtest overfitting counts, so its mean over the repetitions is the sum of two parts. A half of 114 months picks the planted trial less often than the whole window of 228 months does, and the splits in which another trial is picked are where a probability above zero comes from.
+The last two kinds together are the splits that the probability of backtest overfitting counts, so its mean over the repetitions is the sum of two parts. The best trial on a half of 114 months is the planted one less often than the best trial on the whole window of 228 months, and the splits in which another trial is picked are where a probability above zero comes from.
 '''),
     code('''
 splits = S.clause_d_splits()
@@ -245,7 +246,7 @@ display(pd.DataFrame(rows, columns=["figure", "value"]).round(4))'''),
     md('''
 **The share over further repetitions.** Added on 24 November 2026, after the simulation's results were known, and no level reads it.
 
-On these 1,000 repetitions the share is 0.543, 2.4 standard errors above the bound. Over 20,000 further repetitions it is 0.515, with a standard error of 0.0023.
+On these 1,000 repetitions the share is 0.543, 2.4 standard errors above the bound. Over 20,000 further repetitions it is 0.515, with a standard error of 0.0023, within one standard error of the bound.
 
 The cell draws the further repetitions of clause (d)'s setting from the sub-stream of the bound (constants section 14). It takes about a minute.
 '''),
@@ -269,7 +270,7 @@ Expectations E8 and E9 (constants section 13) read the same two statistics on th
 effects = S.detectable_effects()
 display(effects.drop(columns="repetitions").round(3))'''),
     md('''
-With no effect in any of 32 trials, E8 would be met in 1.00 of the repetitions and E9 in 0.91. With a true Sharpe ratio of 0.5 a year in one of them, half the effect gate G3 plants, they would be met in 0.98 and 0.70. So a verdict of met on E8 hardly separates no effect from an effect of that size.
+With no effect in any of 32 trials, E8 would be met in 1.00 of the repetitions and E9 in 0.91. With a true Sharpe ratio of 0.5 a year in one of them, half the effect planted in clause (d), they would be met in 0.98 and 0.70. So a verdict of met on E8 hardly separates no effect from an effect of that size.
 '''),
     md('''
 ## 7. The verdicts
@@ -304,7 +305,7 @@ print("written:", path.relative_to(ROOT))'''),
 What the gate shows when its four clauses are met:
 
 - The code of the expected best Sharpe ratio, of the deflated Sharpe ratio and of the probability of backtest overfitting returns the known answers on returns with no true effect, and when one trial has a true effect of 1.0 a year the mean probability of backtest overfitting falls from 0.498 to 0.100.
-- The deflated Sharpe ratio of the best of 32 trials with no effect sits near one half: picking the best of 32 gives a Sharpe ratio that looks better than any single trial, and the statistic takes that out.
+- The deflated Sharpe ratio of the best of 32 trials with no effect sits near one half: picking the best of 32 gives a Sharpe ratio that looks better than any single trial, and the statistic corrects for that selection.
 
 What could be wrong, and where each point is taken up:
 
@@ -486,7 +487,7 @@ print(summary.to_string(index=False))
 
 NB02 = [
     md('''
-# 02 The universe and its returns: gate G1 (a)
+# 02 The universe and its returns, checked against Stock-Level Tracking
 
 **What this notebook does.** It builds the universe, the S&P 500's members month by month, and their monthly returns with delistings applied, with the code copied from Stock-Level Tracking. It then checks that the copy gives Stock-Level Tracking's committed counts to the last digit, and counts the member-months of the panel's window.
 
@@ -824,7 +825,7 @@ print(results.to_string(index=False))
 ## What was learned, and what could be wrong
 
 - The table above sets each expectation beside its result. None has a verdict here: coverage is judged by gate G1 (b) in notebook 05.
-- Beta and idiosyncratic volatility are measured against French's market, the return of all CRSP stocks weighted by their market value, and over a year of daily returns. Ang, Hodrick, Xing and Zhang (2006) measure idiosyncratic volatility within one month, against the market and two portfolios that stand for size and value. This study's version is the one in the constants.
+- Beta and idiosyncratic volatility are measured against French's market, the return of all CRSP stocks weighted by their market value, and over a year of daily returns. Ang, Hodrick, Xing and Zhang (2006) measure idiosyncratic volatility within one month, against the market and two portfolios that stand for size and value.
 - The monthly file's volume enters only dollar volume. Anderson and Dyl (2007) state that trading volume has historically been overstated for NASDAQ stocks relative to NYSE stocks. Dollar volume is ranked within each month, so an overstatement that moves every NASDAQ stock alike moves their ranks against NYSE stocks. The panel does not correct for it.
 - Each characteristic is measured from days up to the last trading day of month t-1. Notebook 05 builds 24 months a second time, from inputs cut at that day, and compares the two builds, which is the test that nothing later was used.
 '''),
@@ -990,8 +991,8 @@ print(results.to_string(index=False))
 - The table above sets each expectation beside its result. None has a verdict here: coverage is judged by gate G1 (b) in notebook 05.
 - Compustat's records are the values as they stand in the extraction of 28 September 2026. A company that restated its accounts shows the restated figures, which were not known on the day the study uses them. The six-month rule protects against using a year's accounts before they were published. It does not undo restatements, and no data held here could.
 - Two share classes of one company carry the same four values, since they have the same accounts. Their count by year is in the table.
-- The 450 member-months without a company are five members, one in all 408 months, one in 39 months from 2021 and three in one month each, and links of two types the study does not use reach 447 of them, LS all 447 and LX 39 of those, leaving three.
-- A book equity that is not positive leaves book-to-market and operating profitability missing. Notebook 05 sets those cells to the month's median after ranking, as for any missing value, and counts them.
+- The 450 member-months without a company belong to five members: one in all 408 months, one in 39 months from 2021, and three in one month each. Links of two types the study does not use reach 447 of them: links of type LS reach all 447, and links of type LX reach 39 of the same 447. Three member-months are left without a company.
+- A book equity that is not positive leaves book-to-market and operating profitability missing. Notebook 05 sets those missing values to the month's median after ranking, as for any missing value, and counts them.
 '''),
 ]
 
@@ -1001,11 +1002,11 @@ print(results.to_string(index=False))
 
 NB05 = [
     md('''
-# 05 The panel: the target, the transform, and gate G1 (b) and (c)
+# 05 The panel: the target, the transform, and the checks of coverage and look-ahead
 
 **What this notebook does.** It joins the twelve characteristics of notebooks 03 and 04 with the target, the return each member earned in month t above one-month Treasury bills, into the panel the models will read. It judges coverage, gate G1 (b). It ranks each characteristic within its month onto the interval from -1 to 1 and sets a missing value to the month's median. And it builds 24 months again from inputs cut at the last trading day of month t-1, to show that no characteristic used anything later, gate G1 (c).
 
-**Why it comes here.** A model can only be as honest as its inputs. A characteristic missing for a large share of members would leave the models little to learn from, and one that used a later number would make every forecast look better than any investor could have made it, without showing.
+**Why it comes here.** A characteristic missing for a large share of members would leave the models little to learn from, and one that used a later number would make every forecast look better than any investor could have made it, with nothing in the results to show it.
 
 **What it judges.** Gate G1 (b) and (c). With part (a) from notebook 02, all three must be met before milestone 2 fits any model.
 
@@ -1146,7 +1147,7 @@ print(f"{time.time() - t0:.0f} s | Gate G1 (c):", "met" if g1c_met else "not met
     md('''
 ## 6. Gate G1
 
-The three parts together. If any is not met, nothing after this notebook runs and the counts by characteristic and year go to the study's design for a ruling.
+The three parts together. If any is not met, nothing after this notebook runs.
 '''),
     code('''
 g1 = {"g1a_met": bool(g1a["g1a_met"]), "g1b_met": bool(g1b["g1b_met"]), "g1c_met": g1c_met}

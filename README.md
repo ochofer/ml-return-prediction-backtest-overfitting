@@ -1,18 +1,18 @@
-# ml-return-prediction-backtest-overfitting
+# Return prediction: machine learning on the S&P 500's members, corrected for overfitting
 
-This study is in build. It has reached the first of its five milestones, the panel. The repository holds its settings and their tests, the notebooks that build the panel with the aggregates they write, the overfitting statistics with their known-answer simulation on made-up returns, and the code copied from two other studies, which reads the data and computes the intervals for the difference of two Sharpe ratios.
+The study measures two things on the S&P 500's point-in-time members from January 1991 to December 2024, out of sample from 2006. First, how much machine-learning models add to linear models in forecasting each member's return in the next month. Second, how much of the best result is real once corrected for overfitting, that is, for having tried many versions and kept the best one. It follows the method of Gu, Kelly and Xiu (2020), reduced to twelve characteristics and the index's members, with the squared-error loss and a validation sample of five years. The overfitting is measured with the deflated Sharpe ratio of Bailey and López de Prado (2014) and the probability of backtest overfitting of Bailey, Borwein, López de Prado and Zhu (2017).
 
-The study measures two things on the S&P 500's point-in-time members from January 1991 to December 2024. First, how much machine-learning models add to linear models in forecasting each member's return in the next month, out of sample. Second, how much of the best result is real once corrected for overfitting, that is, for having tried many versions and kept the best one. It follows the method of Gu, Kelly and Xiu (2020), reduced to twelve characteristics and the index's members, with the squared-error loss and a validation sample of five years, and measures the overfitting with the deflated Sharpe ratio of Bailey and López de Prado (2014) and the probability of backtest overfitting of Bailey, Borwein, López de Prado and Zhu (2017).
+The study is in build and has reached the first of its five milestones, the panel, i.e., the table with one row per member-month that holds the twelve characteristics and the target. The repository holds the study's settings and their tests, the notebooks that build the panel with the aggregates they write, the code of the two overfitting statistics with its test on made-up returns whose answers are known, and code copied from two other studies, which reads the data and computes the intervals for the difference of two Sharpe ratios.
 
 ## Milestone 1, the panel
 
-Gate G1 is met in its three parts:
+The panel passes gate G1, three checks fixed in advance that stop the study if any of them is not met:
 
-- (a) The copied data layer gives Stock-Level Tracking's 440,724 member-months from January 1926 to December 2024, and its count check by year and its delisting counts by year to the last byte, read from that study's commit 0dabbb0 (`g1a.json`).
+- (a) The data code copied from Stock-Level Tracking gives that study's 440,724 member-months from January 1926 to December 2024, and files identical, byte for byte, to its yearly comparison of the count of members with CRSP's and to its yearly counts of delistings, at that study's commit 0dabbb0 (`g1a.json`).
 - (b) Each of the twelve characteristics is present for at least its level of each month's members in all 408 months from January 1991 to December 2024. The lowest months are book-to-market at 0.924 (May 2024) and operating profitability at 0.930 (July 2023), against a level of 0.80, and the other ten stay at or above 0.982, against 0.90 (`g1b_coverage.json`).
 - (c) The 24 months drawn by the study's seed, built a second time from data cut at the last trading day of the month before, equal the full build in all 144,312 cells, with a largest difference of 0 (`g1c_lookahead.csv`).
 
-The panel holds 204,520 member-months, 100 of them without a target, and 114,521 in the test window (`panel_summary.json`). Before the run, ten figures were written into notebooks 03 and 04 as expected, with no verdict. Seven are forecasts, and three, the count of member-months without size, the coverage of the four daily characteristics and the share with a GVKEY (Compustat's permanent number for a company), are read from Stock-Level Tracking's tables on the same extraction. As the tables in `results/20260928/` give them:
+The panel holds 204,520 member-months, 100 of them without a target, and 114,521 in the test window (`panel_summary.json`). Before the run, ten figures were written into notebooks 03 and 04 as expected values, which are set beside the results and judged by no gate. Seven are forecasts. The other three are read from Stock-Level Tracking's tables on the same extraction: the count of member-months without size, the coverage of the four daily characteristics, and the share with a GVKEY, Compustat's permanent number for a company. The results, from the tables in `results/20260928/`:
 
 - Size is missing in 10 of the 204,520 member-months, where 10 was expected (`market_summary.json`).
 - Volatility, the largest daily return, beta and idiosyncratic volatility are present for at least 0.994 of member-months in every year, the lowest in 2006, where above 0.98 was expected (`market_coverage_by_year.csv`).
@@ -25,21 +25,21 @@ The panel holds 204,520 member-months, 100 of them without a target, and 114,521
 - Book-to-market and operating profitability are present for at least 0.927 and 0.933 of member-months in every year, and earnings-to-price and asset growth for at least 0.986 and 0.992, where above 0.85 and above 0.95 were expected (`accounting_coverage_by_year.csv`).
 - The annual record used is 6 to 11 months old in 0.5000 of member-months and 12 to 17 months old in 0.4995, where about half each was expected (`accounting_summary.json`).
 
-Gate G3, the check of the two overfitting statistics on made-up returns with known answers, is met in its four clauses (`results/simulation/g3_summary.json`).
+Gate G3 tests the code of the two overfitting statistics on made-up returns whose answers are known, in four clauses. On returns with no true effect, the mean of the best of 32 Sharpe ratios, the median of the best trial's deflated Sharpe ratio and the mean probability of backtest overfitting each lie in the range fixed in advance, and the best trial's deflated Sharpe ratio is above 0.95 in at most 5 per cent of repetitions. With one trial given a true Sharpe ratio of 1.0 a year, that trial has the best Sharpe ratio in at least 90 per cent of repetitions and the mean probability of backtest overfitting is below 0.25. All four clauses are met (`results/simulation/g3_summary.json`).
 
 ## Data
 
 CRSP and Compustat, via Wharton Research Data Services, accessed through Queen Mary University of London, in an extraction of 28 September 2026, and Kenneth French's data library. The repository holds no data: code, tests and aggregates only.
 
-The universe, the monthly returns and the reading of the extraction come from the data layer of [Stock-Level Tracking](https://github.com/ochofer/stock-level-tracking), whose seven modules are copied unchanged into `src/mlrp/source/` from its commit 0dabbb0. The interval for the difference of two Sharpe ratios comes from [Volatility-managed portfolios](https://github.com/ochofer/volatility-managed-portfolios), whose `bootstrap.py` is copied unchanged from its commit 74ed6d1. The SHA-256 of each copy is in `src/mlrp/constants.py`, and the tests check every copy against it. `src/mlrp/data.py` calls the copies with this study's settings.
+The universe, the monthly returns and the reading of the extraction come from the data layer of [Stock-Level Tracking](https://github.com/ochofer/stock-level-tracking), whose seven modules are copied unchanged into `src/mlrp/source/` from its commit 0dabbb0. The interval for the difference of two Sharpe ratios comes from [Volatility-managed portfolios](https://github.com/ochofer/volatility-managed-portfolios), whose `bootstrap.py` is copied unchanged from its commit 74ed6d1. The tests check that every copy is unchanged. `src/mlrp/data.py` calls the copies with this study's settings.
 
 ## Notebooks
 
-The notebooks in `notebooks/` are written by `build_notebooks.py` and committed without outputs. Notebooks 01 to 05 build the panel. They read the extraction in place from the folder named by the environment variable `MLRP_DATA_ROOT` and run in order: each writes its aggregates to `results/20260928/`, and the tables with one row per member that a later notebook reads to `local/`, which git ignores. Notebook 12 reads no data.
+The notebooks in `notebooks/` are written by `build_notebooks.py` and committed without outputs. Notebooks 01 to 05 build the panel. They read the extraction in place from the folder named by the environment variable `MLRP_DATA_ROOT` and run in order: each writes its aggregates to `results/20260928/`, and writes the tables with one row per member, which a later notebook reads, to `local/`, which git ignores. Notebook 12 reads no data.
 
 ## Settings
 
-`src/mlrp/constants.py` holds every gate, expectation, sample boundary and count of the study, each with its reason. The levels were set on 18 November 2026. A value still to be set is `None` in the file, with the milestone that sets it. The tests run with `python3 -m pytest tests`.
+`src/mlrp/constants.py` holds every gate, expectation, sample boundary and count of the study, each with its reason. A value still to be set is `None` in the file, with the milestone that sets it. The tests run with `python3 -m pytest tests`.
 
 ## Terms
 
@@ -66,6 +66,14 @@ The notebooks in `notebooks/` are written by `build_notebooks.py` and committed 
 - **probability of backtest overfitting**: the share of the ways of splitting the test window into two halves in which the trial that is best in one half ranks in the lower half of the other.
 - **gate**: a test fixed in advance that the data or the code must pass. A gate that is not met stops the build.
 - **expectation**: a test of a result fixed in advance. An expectation that is not met is reported as a finding.
+
+## References
+
+Bailey, D. H., Borwein, J., López de Prado, M. and Zhu, Q. J. (2017). The probability of backtest overfitting. *Journal of Computational Finance* 20(4), 39 to 69. https://doi.org/10.21314/JCF.2016.322
+
+Bailey, D. H. and López de Prado, M. (2014). The deflated Sharpe ratio: correcting for selection bias, backtest overfitting, and non-normality. *Journal of Portfolio Management* 40(5), 94 to 107. https://doi.org/10.3905/jpm.2014.40.5.094
+
+Gu, S., Kelly, B. and Xiu, D. (2020). Empirical asset pricing via machine learning. *Review of Financial Studies* 33(5), 2223 to 2273. https://doi.org/10.1093/rfs/hhaa009
 
 ## Other projects
 
